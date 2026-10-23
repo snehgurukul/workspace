@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getToken } from "@/lib/gh";
-import { MIN_PASSWORD, isTakenOnSite, normalizeId, removeLogin, saveLogin } from "@/lib/accounts";
+import { MIN_PASSWORD, normalizeId, removeLogin, saveLogin } from "@/lib/accounts";
 import { useData } from "@/lib/store";
 import { type Role, atLeast } from "@/lib/model";
 import { format, subDays } from "date-fns";
@@ -142,7 +142,7 @@ export function Team() {
               const display = name.trim() || uid;
               void run(async () => {
                 if (!ID_RE.test(uid)) throw new Error("User IDs are 3 to 32 letters or numbers, and may use . _ or -");
-                if (people.some((p) => p.id === uid) || (await isTakenOnSite(uid))) throw new Error(`The user ID "${uid}" is already taken.`);
+                if (people.some((p) => p.id === uid)) throw new Error(`The user ID "${uid}" is already taken.`);
                 if (password.length < MIN_PASSWORD) throw new Error(`Passwords need at least ${MIN_PASSWORD} characters.`);
                 await saveLogin(uid, password, getToken());
                 await savePeople((list) => [...list.filter((p) => p.id !== uid), { id: uid, name: display, role: newRole }], `Add ${display}`);

@@ -44,25 +44,34 @@ async function lock(token: string, password: string): Promise<Lock> {
   return { salt: b64(salt), iv: b64(iv), data: b64(data), iterations: ITERATIONS };
 }
 
-// Read without signing in. Uses the public API, then the raw file as a fallback.
-async function readPublic(): Promise<Accounts> {
-  const res = await fetch(`https://api.github.com${ACCOUNTS_PATH}?ref=${ACCOUNTS_BRANCH}`, { headers: { Accept: "application/vnd.github.raw+json" }, cache: "no-store" });
-  if (res.ok) return res.json();
-  const raw = await fetch(`https://raw.githubusercontent.com/${SITE_OWNER}/${SITE_REPO}/${ACCOUNTS_BRANCH}/accounts.json?t=${Date.now()}`, { cache: "no-store" });
-  if (raw.ok) return raw.json();
-  throw new Error("Could not reach GitHub. Check your internet connection and try again.");
+// Read without signing in. GitHub caches these files for a few minutes, so each read asks for a fresh copy,
+// and a login that was just created is looked up again in the other copy before giving up.
+async function readCopies(): Promise<Accounts[]> {
+  const t = Date.now();
+  const api = fetch(`https://api.github.com${ACCOUNTS_PATH}?ref=${ACCOUNTS_BRANCH}&t=${t}`, { headers: { Accept: "application/vnd.github.raw+json" }, cache: "no-store" })
+    .then((r) => (r.ok ? (r.json() as Promise<Accounts>) : null))
+    .catch(() => null);
+  const raw = fetch(`https://raw.githubusercontent.com/${SITE_OWNER}/${SITE_REPO}/${ACCOUNTS_BRANCH}/accounts.json?t=${t}`, { cache: "no-store" })
+    .then((r) => (r.ok ? (r.json() as Promise<Accounts>) : null))
+    .catch(() => null);
+  const [a, b] = await Promise.all([api, raw]);
+  if (!a && !b) throw new Error("Could not reach GitHub. Check your internet connection and try again.");
+  return [a, b].filter((x): x is Accounts => !!x);
 }
 
 export async function unlock(id: string, password: string): Promise<string> {
-  const record = (await readPublic())[await idHash(id)];
-  if (!record) throw new Error("That user ID or password is wrong.");
-  try {
-    const key = await keyFrom(password, bytes(record.salt), record.iterations);
-    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(record.iv) }, key, bytes(record.data));
-    return new TextDecoder().decode(plain);
-  } catch {
-    throw new Error("That user ID or password is wrong.");
+  const key = await idHash(id);
+  const records = (await readCopies()).map((c) => c[key]).filter((r): r is Lock => !!r);
+  for (const record of records) {
+    try {
+      const k = await keyFrom(password, bytes(record.salt), record.iterations);
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(record.iv) }, k, bytes(record.data));
+      return new TextDecoder().decode(plain);
+    } catch {
+      /* wrong password for this copy; try the next */
+    }
   }
+  throw new Error(records.length ? "That user ID or password is wrong." : "That user ID or password is wrong. If the login was created in the last few minutes, wait a minute and try again.");
 }
 
 // Read-modify-write of accounts.json with the signed-in person's key, retrying when someone else saved first.
@@ -102,5 +111,3 @@ export async function removeLogin(id: string) {
     return rest;
   }, "Remove a workspace login");
 }
-
-export const isTakenOnSite = async (id: string) => Boolean((await readPublic().catch(() => ({}) as Accounts))[await idHash(id)]);
