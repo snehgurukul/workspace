@@ -56,6 +56,8 @@ export interface Meta {
   blockedBy?: number[];
   verifiedBy?: string;
   verifiedAt?: string;
+  people?: string[];
+  by?: string;
 }
 
 export interface GhUser {
@@ -153,13 +155,13 @@ export function toTask(i: GhIssue): Task {
     priority: (pick(names, "priority:") || "medium") as Priority,
     release: pick(names, "release:"),
     otherLabels: names.filter((n) => !/^(project|status|type|priority|release):/.test(n)),
-    assignees: i.assignees.map((a) => a.login),
+    assignees: meta.people ?? i.assignees.map((a) => a.login),
     milestone: i.milestone?.number ?? null,
     open: i.state === "open",
     closedAt: i.closed_at,
     createdAt: i.created_at,
     updatedAt: i.updated_at,
-    author: i.user.login,
+    author: meta.by ?? i.user.login,
     comments: i.comments,
     url: i.html_url,
   };
@@ -201,6 +203,13 @@ export function toSprint(m: GhMilestone): Sprint | null {
     open: m.state === "open",
     closedAt: m.closed_at,
   };
+}
+
+// Someone who can use the workspace. Kept in people.json on the data branch.
+export interface Person {
+  id: string;
+  name: string;
+  role: Role;
 }
 
 export const taskKey = (project: string, n: number) => `${project || "#"}-${n}`;

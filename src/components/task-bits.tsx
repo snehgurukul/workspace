@@ -23,11 +23,18 @@ export function TaskRow({ task, showProject }: { task: Task; showProject?: boole
       <PriorityTag priority={task.priority} />
       <div className="flex -space-x-1.5">
         {task.assignees.slice(0, 3).map((a) => (
-          <Avatar key={a} login={a} size={22} />
+          <MemberAvatar key={a} login={a} size={22} />
         ))}
       </div>
     </Link>
   );
+}
+
+// Avatar for a teammate by their login, showing their name from the team list.
+export function MemberAvatar({ login, size }: { login: string; size?: number }) {
+  const { members } = useData();
+  const m = members.find((x) => x.login === login);
+  return <Avatar login={login} url={m?.avatar_url || undefined} name={m?.name ?? undefined} size={size} />;
 }
 
 export function TaskCard({ task }: { task: Task }) {
@@ -69,7 +76,7 @@ export function TaskCard({ task }: { task: Task }) {
         )}
         <div className="ml-auto flex -space-x-1.5">
           {task.assignees.slice(0, 3).map((a) => (
-            <Avatar key={a} login={a} size={20} />
+            <MemberAvatar key={a} login={a} size={20} />
           ))}
         </div>
       </div>
@@ -226,7 +233,9 @@ export function TaskDialog({ defaults = {}, onClose, onCreated }: { defaults?: P
             <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="input">
               <option value="">Nobody</option>
               {members.map((m) => (
-                <option key={m.login}>{m.login}</option>
+                <option key={m.login} value={m.login}>
+                  {m.name || m.login}
+                </option>
               ))}
             </select>
           </label>

@@ -31,7 +31,9 @@ export function FilterBar({ value, onChange, project }: { value: Filter; onChang
         <option value="me">Me</option>
         <option value="none">Unassigned</option>
         {members.map((m) => (
-          <option key={m.login}>{m.login}</option>
+          <option key={m.login} value={m.login}>
+            {m.name || m.login}
+          </option>
         ))}
       </select>
       <select value={value.type} onChange={set("type")} className="input h-8 w-auto capitalize">

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { gh, ghAll, GitHubError, readJson, repoPath, updateJson, getToken, setToken } from "./gh";
+import { gh, ghAll, GitHubError, readJson, repoPath, updateJson, getToken, getUserId, setToken } from "./gh";
 import {
   type Config,
   type GhIssue,
@@ -7,6 +7,7 @@ import {
   type GhMilestone,
   type GhUser,
   type Meta,
+  type Person,
   type Priority,
   type Project,
   type Role,
@@ -24,6 +25,8 @@ export interface Member extends GhUser {
   role: Role;
 }
 
+const toMember = (p: Person): Member => ({ login: p.id, name: p.name, avatar_url: "", role: p.role });
+
 interface State {
   me: GhUser;
   role: Role;
@@ -31,6 +34,9 @@ interface State {
   tasks: Task[];
   sprints: Sprint[];
   members: Member[];
+  people: Person[];
+  // True when signed in with a workspace user ID and password.
+  passwordLogin: boolean;
 }
 
 export interface NewTask {
@@ -74,22 +80,34 @@ function useWorkspace() {
     setLoading(true);
     setError("");
     try {
-      const [me, repo] = await Promise.all([gh<GhUser>("/user"), gh<{ permissions?: Record<string, boolean> }>(repoPath(""))]);
-      const role = roleFrom(repo.permissions);
-      const [issues, milestones, config, labelList, collaborators] = await Promise.all([
+      const userId = getUserId();
+      const [ghMe, repo] = await Promise.all([gh<GhUser>("/user"), gh<{ permissions?: Record<string, boolean> }>(repoPath(""))]);
+      const [issues, milestones, config, labelList, people] = await Promise.all([
         ghAll<GhIssue>(repoPath("/issues?state=all")),
         ghAll<GhMilestone>(repoPath("/milestones?state=all")),
         readJson<Config>("config.json", EMPTY).catch(() => EMPTY),
         ghAll<GhLabel>(repoPath("/labels")),
-        role === "viewer" ? Promise.resolve([] as (GhUser & { permissions?: Record<string, boolean> })[]) : ghAll<GhUser & { permissions?: Record<string, boolean> }>(repoPath("/collaborators")),
+        readJson<Person[]>("people.json", []).catch(() => [] as Person[]),
       ]);
       labels.current = new Set(labelList.map((l) => l.name));
-      const members: Member[] = collaborators.length
-        ? collaborators.map((c) => ({ login: c.login, avatar_url: c.avatar_url, role: roleFrom(c.permissions) }))
-        : [{ ...me, role }];
+      let me: GhUser = ghMe;
+      let role = roleFrom(repo.permissions);
+      if (userId) {
+        const person = people.find((p) => p.id === userId);
+        if (!person) {
+          setToken("");
+          throw new Error("This login has been removed. Ask an admin for a new one.");
+        }
+        me = { login: person.id, name: person.name, avatar_url: "" };
+        role = person.role;
+      }
+      const members = people.map(toMember);
+      if (!userId && !members.some((m) => m.login === me.login)) members.push({ ...me, role });
       setState({
         me,
         role,
+        people,
+        passwordLogin: Boolean(userId),
         config: { ...EMPTY, ...config },
         tasks: issues.filter((i) => !i.pull_request).map(toTask),
         sprints: milestones.map(toSprint).filter((s): s is Sprint => s !== null),
@@ -152,9 +170,8 @@ function useWorkspace() {
         method: "POST",
         body: {
           title: input.title.trim(),
-          body: joinBody(input.description ?? "", input.meta ?? {}),
+          body: joinBody(input.description ?? "", { ...(input.meta ?? {}), people: input.assignees?.length ? input.assignees : undefined, by: state?.me.login }),
           labels: names,
-          assignees: input.assignees ?? [],
           ...(input.sprint ? { milestone: input.sprint } : {}),
         },
       });
@@ -163,11 +180,10 @@ function useWorkspace() {
     }
 
     async function updateTask(task: Task, patch: TaskPatch): Promise<void> {
-      const next = { ...task, ...patch, meta: { ...task.meta, ...(patch.meta ?? {}) } };
+      const next = { ...task, ...patch, meta: { ...task.meta, ...(patch.meta ?? {}), ...(patch.assignees ? { people: patch.assignees } : {}) } };
       const body: Record<string, unknown> = {};
       if (patch.title !== undefined) body.title = next.title;
-      if (patch.description !== undefined || patch.meta) body.body = joinBody(next.description, next.meta);
-      if (patch.assignees) body.assignees = next.assignees;
+      if (patch.description !== undefined || patch.meta || patch.assignees) body.body = joinBody(next.description, next.meta);
       if (patch.milestone !== undefined) body.milestone = next.milestone;
       if (["type", "priority", "status", "release", "otherLabels", "project"].some((k) => k in patch)) {
         const names = taskLabels(next);
@@ -216,7 +232,17 @@ function useWorkspace() {
       setState((s) => s && { ...s, sprints: s.sprints.filter((x) => x.number !== number), tasks: s.tasks.map((t) => (t.milestone === number ? { ...t, milestone: null } : t)) });
     }
 
-    return { createTask, updateTask, deleteTask, updateConfig, saveSprint, setSprintOpen, deleteSprint, ensureLabels: (n: string[]) => ensureLabels(n, cfg().projects) };
+    async function savePeople(change: (p: Person[]) => Person[], message: string) {
+      const people = await updateJson<Person[]>("people.json", [], change, message);
+      setState((s) => {
+        if (!s) return s;
+        const members = people.map(toMember);
+        if (!s.passwordLogin && !members.some((m) => m.login === s.me.login)) members.push({ ...s.me, role: s.role });
+        return { ...s, people, members };
+      });
+    }
+
+    return { createTask, updateTask, deleteTask, updateConfig, saveSprint, setSprintOpen, deleteSprint, savePeople, ensureLabels: (n: string[]) => ensureLabels(n, cfg().projects) };
   }, [state, ensureLabels]);
 
   const signOut = () => {

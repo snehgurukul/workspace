@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { SEVERITIES, taskKey } from "@/lib/model";
-import { Avatar, Empty, PageHeader, SeverityTag } from "@/components/ui";
-import { NewTaskButton } from "@/components/task-bits";
+import { Empty, PageHeader, SeverityTag } from "@/components/ui";
+import { MemberAvatar, NewTaskButton } from "@/components/task-bits";
 
 export function Bugs() {
   const { tasks, config } = useData();
@@ -52,7 +52,7 @@ export function Bugs() {
                 {b.meta.env && <span className="hidden text-xs text-slate-500 md:inline">{b.meta.env}</span>}
                 <span className="text-xs text-slate-500">{b.status}</span>
                 {!b.open && (b.meta.verifiedBy ? <CheckCircle2 size={15} className="text-green-600" aria-label="Verified" /> : <span className="tag bg-amber-100 text-amber-800">verify</span>)}
-                {b.assignees[0] && <Avatar login={b.assignees[0]} size={22} />}
+                {b.assignees[0] && <MemberAvatar login={b.assignees[0]} size={22} />}
               </Link>
             ))}
           </div>

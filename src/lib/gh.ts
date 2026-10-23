@@ -3,6 +3,7 @@
 
 const API = "https://api.github.com";
 const TOKEN_KEY = "sneh.token";
+const USER_KEY = "sneh.user";
 
 export const OWNER = import.meta.env.VITE_REPO_OWNER ?? "snehgurukul";
 export const REPO = import.meta.env.VITE_REPO_NAME ?? "webapp";
@@ -12,17 +13,35 @@ const R = `/repos/${OWNER}/${REPO}`;
 
 export const getToken = () => {
   try {
-    return localStorage.getItem(TOKEN_KEY) ?? "";
+    return localStorage.getItem(TOKEN_KEY) ?? memoryToken;
   } catch {
-    return "";
+    return memoryToken;
   }
 };
-export const setToken = (t: string) => {
+let memoryToken = "";
+let memoryUser = "";
+// `user` is the workspace user ID for password sign-ins; empty when someone signs in with their own GitHub key.
+export const setToken = (t: string, user = "") => {
+  memoryToken = t;
+  memoryUser = t ? user : "";
   try {
-    if (t) localStorage.setItem(TOKEN_KEY, t);
-    else localStorage.removeItem(TOKEN_KEY);
+    if (t) {
+      localStorage.setItem(TOKEN_KEY, t);
+      if (user) localStorage.setItem(USER_KEY, user);
+      else localStorage.removeItem(USER_KEY);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
   } catch {
-    /* private window: the token lasts for this tab only */
+    /* private window: the sign-in lasts for this tab only */
+  }
+};
+export const getUserId = () => {
+  try {
+    return localStorage.getItem(USER_KEY) ?? memoryUser;
+  } catch {
+    return memoryUser;
   }
 };
 

@@ -6,17 +6,23 @@ import { X } from "lucide-react";
 import type { Priority, Severity, TaskType } from "@/lib/model";
 import { PRIORITY_STYLE, SEVERITY_STYLE, TYPE_STYLE, cn } from "@/lib/utils";
 
-export function Avatar({ login, url, size = 24 }: { login: string; url?: string; size?: number }) {
+const AVATAR_COLORS = ["#F97316", "#2563EB", "#16A34A", "#7C3AED", "#DB2777", "#0891B2", "#CA8A04", "#475569"];
+
+// Shows a photo when there is one, otherwise the person's initials on a colour picked from their ID.
+export function Avatar({ login, url, name, size = 24 }: { login: string; url?: string; name?: string; size?: number }) {
+  const label = name || login;
+  if (url) return <img src={url} alt={label} title={label} width={size} height={size} className="shrink-0 rounded-full bg-slate-200 ring-2 ring-white" style={{ width: size, height: size }} />;
+  const initials = label
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+  const color = AVATAR_COLORS[[...login].reduce((n, c) => n + c.charCodeAt(0), 0) % AVATAR_COLORS.length];
   return (
-    <img
-      src={url ?? `https://github.com/${login}.png?size=${size * 2}`}
-      alt={login}
-      title={login}
-      width={size}
-      height={size}
-      className="shrink-0 rounded-full bg-slate-200 ring-2 ring-white"
-      style={{ width: size, height: size }}
-    />
+    <span title={label} className="inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white ring-2 ring-white" style={{ width: size, height: size, background: color, fontSize: size * 0.4 }}>
+      {initials || "?"}
+    </span>
   );
 }
 

@@ -68,7 +68,7 @@ function Sidebar({ onNavigate }: { onNavigate: () => void }) {
           ))}
       </div>
       <div className="flex items-center gap-2 border-t border-slate-200 p-3">
-        <Avatar login={me.login} url={me.avatar_url} size={28} />
+        <Avatar login={me.login} url={me.avatar_url || undefined} name={me.name ?? undefined} size={28} />
         <span className="min-w-0 flex-1 truncate text-sm font-semibold">{me.name || me.login}</span>
         <NavLink to="/settings" onClick={onNavigate} className="rounded p-1.5 text-slate-500 hover:bg-slate-100" title="Settings">
           <Settings size={16} />
@@ -145,6 +145,7 @@ function Notifications() {
 }
 
 export function Layout() {
+  const { passwordLogin } = useData();
   const [menu, setMenu] = useState(false);
   const [q, setQ] = useState("");
   const navigate = useNavigate();
@@ -178,9 +179,7 @@ export function Layout() {
             <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} className="input pl-9" placeholder="Search tasks and docs" />
           </form>
-          <div className="ml-auto">
-            <Notifications />
-          </div>
+          <div className="ml-auto">{!passwordLogin && <Notifications />}</div>
         </div>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <Outlet />

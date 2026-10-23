@@ -1,13 +1,56 @@
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { OWNER, REPO } from "@/lib/gh";
+import { OWNER, REPO, getToken } from "@/lib/gh";
+import { MIN_PASSWORD, saveLogin } from "@/lib/accounts";
 import { useData } from "@/lib/store";
 import { atLeast } from "@/lib/model";
-import { download } from "@/lib/utils";
-import { Avatar, PageHeader } from "@/components/ui";
+import { download, errorText } from "@/lib/utils";
+import { Avatar, ErrorNote, PageHeader } from "@/components/ui";
+
+function ChangePassword({ id }: { id: string }) {
+  const [pw, setPw] = useState("");
+  const [again, setAgain] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+  return (
+    <form
+      className="card flex flex-col gap-3 p-5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (pw !== again) return setError("The two passwords don't match.");
+        setBusy(true);
+        setError("");
+        setDone(false);
+        saveLogin(id, pw, getToken())
+          .then(() => (setDone(true), setPw(""), setAgain("")))
+          .catch((err) => setError(errorText(err)))
+          .finally(() => setBusy(false));
+      }}
+    >
+      <h2 className="font-bold">Change my password</h2>
+      <input
+        type="password"
+        value={pw}
+        onChange={(e) => setPw(e.target.value)}
+        className="input"
+        placeholder={`New password (at least ${MIN_PASSWORD} characters)`}
+        autoComplete="new-password"
+        minLength={MIN_PASSWORD}
+        required
+      />
+      <input type="password" value={again} onChange={(e) => setAgain(e.target.value)} className="input" placeholder="Type it again" autoComplete="new-password" required />
+      <ErrorNote error={error} />
+      {done && <p className="text-sm text-green-700">Password changed. Use the new one next time you sign in.</p>}
+      <button disabled={busy} className="btn-primary self-start">
+        {busy ? "Saving…" : "Change password"}
+      </button>
+    </form>
+  );
+}
 
 export function Settings() {
-  const { me, role, tasks, config, sprints, members, signOut } = useData();
+  const { me, role, tasks, config, sprints, members, signOut, passwordLogin } = useData();
   const [copied, setCopied] = useState(false);
   const repoUrl = `https://github.com/${OWNER}/${REPO}`;
   const csv = () => {
@@ -35,31 +78,37 @@ export function Settings() {
       <PageHeader title="Settings" />
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
         <section className="card flex items-center gap-4 p-5">
-          <Avatar login={me.login} url={me.avatar_url} size={48} />
+          <Avatar login={me.login} url={me.avatar_url || undefined} name={me.name ?? undefined} size={48} />
           <div className="flex-1">
             <p className="font-bold">{me.name || me.login}</p>
-            <p className="text-sm capitalize text-slate-500">
-              @{me.login} · {role}
+            <p className="text-sm text-slate-500">
+              {passwordLogin ? "User ID" : "GitHub"}: {me.login} · <span className="capitalize">{role}</span>
             </p>
           </div>
-          <a href="https://github.com/settings/profile" target="_blank" rel="noreferrer" className="btn-secondary">
-            Edit on GitHub <ExternalLink size={13} />
-          </a>
+          {!passwordLogin && (
+            <a href="https://github.com/settings/profile" target="_blank" rel="noreferrer" className="btn-secondary">
+              Edit on GitHub <ExternalLink size={13} />
+            </a>
+          )}
           <button onClick={signOut} className="btn-secondary">
             Sign out
           </button>
         </section>
 
-        <section className="card flex flex-col gap-2 p-5">
-          <h2 className="font-bold">Email and phone notifications</h2>
-          <p className="text-sm text-slate-600">
-            GitHub sends you an email when you're assigned a task or someone @mentions you. Choose how you get them in{" "}
-            <a className="font-semibold text-brand-600 underline" href="https://github.com/settings/notifications" target="_blank" rel="noreferrer">
-              GitHub notification settings
-            </a>
-            . The free GitHub Mobile app gives you phone alerts too.
-          </p>
-        </section>
+        {passwordLogin && <ChangePassword id={me.login} />}
+
+        {!passwordLogin && (
+          <section className="card flex flex-col gap-2 p-5">
+            <h2 className="font-bold">Email and phone notifications</h2>
+            <p className="text-sm text-slate-600">
+              GitHub sends you an email when you're assigned a task or someone @mentions you. Choose how you get them in{" "}
+              <a className="font-semibold text-brand-600 underline" href="https://github.com/settings/notifications" target="_blank" rel="noreferrer">
+                GitHub notification settings
+              </a>
+              . The free GitHub Mobile app gives you phone alerts too.
+            </p>
+          </section>
+        )}
 
         <section className="card flex flex-col gap-2 p-5">
           <h2 className="font-bold">Calendar</h2>
@@ -74,7 +123,10 @@ export function Settings() {
               Tasks as CSV
             </button>
             {atLeast(role, "admin") && (
-              <button onClick={() => download("sneh-workspace-backup.json", JSON.stringify({ exportedAt: new Date().toISOString(), config, sprints, members, tasks }, null, 2), "application/json")} className="btn-secondary">
+              <button
+                onClick={() => download("sneh-workspace-backup.json", JSON.stringify({ exportedAt: new Date().toISOString(), config, sprints, members, tasks }, null, 2), "application/json")}
+                className="btn-secondary"
+              >
                 Full backup (JSON)
               </button>
             )}
@@ -88,7 +140,8 @@ export function Settings() {
           <section className="card flex flex-col gap-2 p-5">
             <h2 className="font-bold">Team chat alerts</h2>
             <p className="text-sm text-slate-600">
-              To post new tasks and comments to Microsoft Teams, Google Chat or Slack, add a repository secret named <code className="rounded bg-slate-100 px-1">ALERTS_WEBHOOK_URL</code> holding your chat's incoming webhook address. Alerts start straight away.
+              To post new tasks and comments to Microsoft Teams, Google Chat or Slack, add a repository secret named <code className="rounded bg-slate-100 px-1">ALERTS_WEBHOOK_URL</code> holding your
+              chat's incoming webhook address. Alerts start straight away.
             </p>
             <button
               onClick={() => {

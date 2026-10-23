@@ -8,6 +8,7 @@ import { type GhUser, PRIORITIES, SEVERITIES, TYPES, type Priority, type Severit
 import { cn, errorText } from "@/lib/utils";
 import { Avatar, ErrorNote, Markdown, Spinner, TypeTag } from "@/components/ui";
 import { Attachments } from "@/components/file-list";
+import { MemberAvatar } from "@/components/task-bits";
 
 interface Comment {
   id: number;
@@ -27,6 +28,11 @@ interface TimelineEvent {
   commit_url?: string;
   source?: { issue?: { number: number; title: string; html_url: string; state: string; pull_request?: { merged_at: string | null } } };
 }
+
+// Comments are posted with the shared GitHub key, so each one carries its writer's workspace ID in a hidden marker.
+const BY_RE = /\n*<!-- by:([^ ]+) -->\s*$/;
+const commentBy = (c: Comment) => c.body.match(BY_RE)?.[1] ?? c.user.login;
+const commentText = (c: Comment) => c.body.replace(BY_RE, "");
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -90,7 +96,7 @@ function TaskView({ task }: { task: Task }) {
   const statuses = project?.statuses ?? [];
   const doneStatus = statuses.find((s) => s.category === "done")?.name;
   const links = timeline.filter((e) => (e.event === "cross-referenced" && e.source?.issue?.pull_request) || (e.event === "referenced" && e.commit_id));
-  const history = timeline.filter((e) => ["labeled", "unlabeled", "assigned", "unassigned", "closed", "reopened", "renamed", "milestoned", "demilestoned"].includes(e.event));
+  const history = timeline.filter((e) => ["labeled", "unlabeled", "closed", "reopened", "renamed", "milestoned", "demilestoned"].includes(e.event));
 
   const findTask = (ref: string) => {
     const n = Number(ref.trim().replace(/^#|^[A-Z][A-Z0-9]*-/i, ""));
@@ -103,22 +109,18 @@ function TaskView({ task }: { task: Task }) {
       case "unlabeled": {
         const [kind, value] = (e.label?.name ?? "").split(":");
         if (!value) return `${e.event === "labeled" ? "added" : "removed"} label ${e.label?.name}`;
-        return e.event === "labeled" ? `set ${kind} to ${value}` : null;
+        return e.event === "labeled" ? `${kind} set to ${value}` : null;
       }
-      case "assigned":
-        return `assigned ${e.assignee?.login}`;
-      case "unassigned":
-        return `unassigned ${e.assignee?.login}`;
-      case "closed":
-        return "closed this task";
+            case "closed":
+        return "closed";
       case "reopened":
-        return "reopened this task";
+        return "reopened";
       case "renamed":
-        return `renamed it from "${e.rename?.from}"`;
+        return `renamed from "${e.rename?.from}"`;
       case "milestoned":
-        return `added it to ${e.milestone?.title.split(" · ")[1] ?? e.milestone?.title}`;
+        return `added to ${e.milestone?.title.split(" · ")[1] ?? e.milestone?.title}`;
       case "demilestoned":
-        return `removed it from ${e.milestone?.title.split(" · ")[1] ?? e.milestone?.title}`;
+        return `removed from ${e.milestone?.title.split(" · ")[1] ?? e.milestone?.title}`;
     }
     return null;
   };
@@ -235,7 +237,7 @@ function TaskView({ task }: { task: Task }) {
                     {s.title}
                   </Link>
                   <span className="text-xs text-slate-500">{taskKey(s.project, s.number)}</span>
-                  {s.assignees[0] && <Avatar login={s.assignees[0]} size={20} />}
+                  {s.assignees[0] && <MemberAvatar login={s.assignees[0]} size={20} />}
                 </div>
               ))}
               {canEdit && (
@@ -345,13 +347,16 @@ function TaskView({ task }: { task: Task }) {
             {tab === "comments" ? (
               <div className="flex flex-col gap-4">
                 {comments === null && <Spinner />}
-                {comments?.map((c) => (
+                {comments?.map((c) => {
+                  const by = commentBy(c);
+                  const who = members.find((m) => m.login === by);
+                  return (
                   <div key={c.id} className="flex gap-3">
-                    <Avatar login={c.user.login} url={c.user.avatar_url} size={30} />
+                    <Avatar login={by} url={who?.avatar_url || undefined} name={who?.name ?? undefined} size={30} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm">
-                        <span className="font-semibold">{c.user.login}</span> <span className="text-xs text-slate-500">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
-                        {(c.user.login === me.login || atLeast(role, "manager")) && (
+                        <span className="font-semibold">{who?.name || by}</span> <span className="text-xs text-slate-500">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
+                        {(by === me.login || atLeast(role, "manager")) && (
                           <button
                             onClick={() => confirm("Delete this comment?") && run(async () => (await gh(repoPath(`/issues/comments/${c.id}`), { method: "DELETE" }), loadThread()))}
                             className="ml-2 text-xs text-slate-400 hover:text-red-600"
@@ -360,17 +365,18 @@ function TaskView({ task }: { task: Task }) {
                           </button>
                         )}
                       </p>
-                      <Markdown source={c.body} className="mt-1" />
+                      <Markdown source={commentText(c)} className="mt-1" />
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 {canEdit && (
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       if (!comment.trim()) return;
                       void run(async () => {
-                        await gh(repoPath(`/issues/${task.number}/comments`), { method: "POST", body: { body: comment.trim() } });
+                        await gh(repoPath(`/issues/${task.number}/comments`), { method: "POST", body: { body: `${comment.trim()}\n\n<!-- by:${me.login} -->` } });
                         setComment("");
                         loadThread();
                       });
@@ -392,13 +398,13 @@ function TaskView({ task }: { task: Task }) {
             ) : (
               <ul className="flex flex-col gap-2 text-sm">
                 <li className="text-slate-600">
-                  <span className="font-semibold text-ink">{task.author}</span> created this task {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+                  <span className="font-semibold text-ink">{members.find((m) => m.login === task.author)?.name || task.author}</span> created this task {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
                 </li>
                 {history.map((e, i) => {
                   const text = describe(e);
                   return text ? (
                     <li key={i} className="text-slate-600">
-                      <span className="font-semibold text-ink">{e.actor?.login}</span> {text} {e.created_at && formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}
+                      {text[0].toUpperCase() + text.slice(1)} {e.created_at && formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}
                     </li>
                   ) : null;
                 })}
@@ -435,7 +441,7 @@ function TaskView({ task }: { task: Task }) {
                     checked={task.assignees.includes(m.login)}
                     onChange={(e) => patch({ assignees: e.target.checked ? [...task.assignees, m.login] : task.assignees.filter((a) => a !== m.login) })}
                   />
-                  <Avatar login={m.login} url={m.avatar_url} size={20} /> {m.login}
+                  <Avatar login={m.login} url={m.avatar_url || undefined} name={m.name ?? undefined} size={20} /> {m.name || m.login}
                 </label>
               ))}
             </div>
@@ -509,7 +515,7 @@ function TaskView({ task }: { task: Task }) {
             </select>
           </label>
           <p className="text-xs text-slate-500">
-            Created by {task.author} on {format(new Date(task.createdAt), "d MMM yyyy")}
+            Created by {members.find((m) => m.login === task.author)?.name || task.author} on {format(new Date(task.createdAt), "d MMM yyyy")}
             <br />
             Updated {formatDistanceToNow(new Date(task.updatedAt), { addSuffix: true })}
           </p>
