@@ -4,5 +4,11 @@
   "iv": "HiHsGaB03Y/fBdeq",
   "data": "KJXej/e8virV8CmrmpphRrDzXH3HaJAazc/vkLac2DEQ8bZPkWah67jTkUkgT5nlHXp+jnWS+Ok=",
   "iterations": 600000
+ },
+ "WoAaVJP7eRabNJUJogOUYxMHxSOFfTJl": {
+  "salt": "sSofsppH2IzI+exYyto/sw==",
+  "iv": "ntNe1nFOGWuEWkya",
+  "data": "hEgBmesAZDfhIEUnFnZtTYJsvBJuaw+TD6KUrDBVtWBXc2vMInzUMsJSW56iZsANURU7pSWkhKM=",
+  "iterations": 600000
  }
 }
