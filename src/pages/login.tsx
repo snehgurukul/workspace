@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, KeyRound } from "lucide-react";
+import { ExternalLink, Eye, EyeOff, KeyRound } from "lucide-react";
 import { OWNER, REPO, setToken } from "@/lib/gh";
 import { normalizeId, unlock } from "@/lib/accounts";
 import { useWs } from "@/lib/store";
@@ -13,6 +13,7 @@ export function Login() {
   const [mode, setMode] = useState<"password" | "key">("password");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
   const [token, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +53,12 @@ export function Login() {
             <label className="label" htmlFor="password">
               Password
             </label>
-            <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input" autoComplete="current-password" required />
+            <div className="relative">
+              <input id="password" type={show ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="input pr-10" autoComplete="current-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} required />
+              <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-1.5 rounded p-1 text-slate-400 hover:text-ink" aria-label={show ? "Hide password" : "Show password"}>
+                {show ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             <ErrorNote error={error || ws.error} />
             <button disabled={working || !id.trim() || !password} className="btn-primary justify-center">
               {working ? "Signing in…" : "Sign in"}
