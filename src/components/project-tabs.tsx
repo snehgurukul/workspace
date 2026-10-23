@@ -25,6 +25,9 @@ export function ProjectHeader() {
         <NavLink to={`/projects/${project.key}/list`} className={tab}>
           List
         </NavLink>
+        <NavLink to={`/timeline?project=${project.key}`} className={tab}>
+          Timeline
+        </NavLink>
         {atLeast(role, "manager") && (
           <NavLink to={`/projects/${project.key}/settings`} className={tab} title="Project settings">
             <Settings size={16} />

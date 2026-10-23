@@ -6,6 +6,7 @@ import {
   type GhLabel,
   type GhMilestone,
   type GhUser,
+  type Announcement,
   type Meta,
   type Person,
   type Priority,
@@ -35,6 +36,7 @@ interface State {
   sprints: Sprint[];
   members: Member[];
   people: Person[];
+  announcements: Announcement[];
   // True when signed in with a workspace user ID and password.
   passwordLogin: boolean;
 }
@@ -82,12 +84,13 @@ function useWorkspace() {
     try {
       const userId = getUserId();
       const [ghMe, repo] = await Promise.all([gh<GhUser>("/user"), gh<{ permissions?: Record<string, boolean> }>(repoPath(""))]);
-      const [issues, milestones, config, labelList, people] = await Promise.all([
+      const [issues, milestones, config, labelList, people, announcements] = await Promise.all([
         ghAll<GhIssue>(repoPath("/issues?state=all")),
         ghAll<GhMilestone>(repoPath("/milestones?state=all")),
         readJson<Config>("config.json", EMPTY).catch(() => EMPTY),
         ghAll<GhLabel>(repoPath("/labels")),
         readJson<Person[]>("people.json", []).catch(() => [] as Person[]),
+        readJson<Announcement[]>("announcements.json", []).catch(() => [] as Announcement[]),
       ]);
       labels.current = new Set(labelList.map((l) => l.name));
       let me: GhUser = ghMe;
@@ -107,6 +110,7 @@ function useWorkspace() {
         me,
         role,
         people,
+        announcements,
         passwordLogin: Boolean(userId),
         config: { ...EMPTY, ...config },
         tasks: issues.filter((i) => !i.pull_request).map(toTask),
@@ -161,6 +165,15 @@ function useWorkspace() {
     const cfg = () => state?.config ?? EMPTY;
     const projectOf = (key: string) => cfg().projects.find((p) => p.key === key);
 
+    // Remembers who assigned each newly added person, so their inbox can say so.
+    const assignedMeta = (before: string[], after: string[], current: Meta["assigned"] = {}) => {
+      const at = new Date().toISOString();
+      const by = state?.me.login ?? "";
+      const next = Object.fromEntries(Object.entries(current).filter(([who]) => after.includes(who)));
+      for (const who of after) if (!before.includes(who)) next[who] = { by, at };
+      return Object.keys(next).length ? next : undefined;
+    };
+
     async function createTask(input: NewTask): Promise<Task> {
       const project = projectOf(input.project);
       const status = input.status ?? project?.statuses[0]?.name ?? "To do";
@@ -170,7 +183,7 @@ function useWorkspace() {
         method: "POST",
         body: {
           title: input.title.trim(),
-          body: joinBody(input.description ?? "", { ...(input.meta ?? {}), people: input.assignees?.length ? input.assignees : undefined, by: state?.me.login }),
+          body: joinBody(input.description ?? "", { ...(input.meta ?? {}), people: input.assignees?.length ? input.assignees : undefined, by: state?.me.login, assigned: assignedMeta([], input.assignees ?? []) }),
           labels: names,
           ...(input.sprint ? { milestone: input.sprint } : {}),
         },
@@ -180,7 +193,7 @@ function useWorkspace() {
     }
 
     async function updateTask(task: Task, patch: TaskPatch): Promise<void> {
-      const next = { ...task, ...patch, meta: { ...task.meta, ...(patch.meta ?? {}), ...(patch.assignees ? { people: patch.assignees } : {}) } };
+      const next = { ...task, ...patch, meta: { ...task.meta, ...(patch.meta ?? {}), ...(patch.assignees ? { people: patch.assignees, assigned: assignedMeta(task.assignees, patch.assignees, task.meta.assigned) } : {}) } };
       const body: Record<string, unknown> = {};
       if (patch.title !== undefined) body.title = next.title;
       if (patch.description !== undefined || patch.meta || patch.assignees) body.body = joinBody(next.description, next.meta);
@@ -242,7 +255,12 @@ function useWorkspace() {
       });
     }
 
-    return { createTask, updateTask, deleteTask, updateConfig, saveSprint, setSprintOpen, deleteSprint, savePeople, ensureLabels: (n: string[]) => ensureLabels(n, cfg().projects) };
+    async function saveAnnouncements(change: (a: Announcement[]) => Announcement[], message: string) {
+      const announcements = await updateJson<Announcement[]>("announcements.json", [], change, message);
+      setState((s) => s && { ...s, announcements });
+    }
+
+    return { createTask, updateTask, deleteTask, updateConfig, saveSprint, setSprintOpen, deleteSprint, savePeople, saveAnnouncements, ensureLabels: (n: string[]) => ensureLabels(n, cfg().projects) };
   }, [state, ensureLabels]);
 
   const signOut = () => {

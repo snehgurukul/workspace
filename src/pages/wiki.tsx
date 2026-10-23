@@ -123,7 +123,7 @@ export function Wiki() {
         )}
       </PageHeader>
       <main className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <aside className="w-full shrink-0 border-b border-slate-200 bg-white p-3 md:w-64 md:overflow-y-auto md:border-b-0 md:border-r">
+        <aside className="w-full shrink-0 border-b border-slate-200 bg-surface p-3 md:w-64 md:overflow-y-auto md:border-b-0 md:border-r">
           {paths === null ? <Spinner /> : tree.length ? <TreeView nodes={tree} current={current} /> : <p className="p-2 text-sm text-slate-500">No pages yet.</p>}
         </aside>
         <div className="min-w-0 flex-1 overflow-y-auto p-6">

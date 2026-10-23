@@ -58,6 +58,29 @@ export interface Meta {
   verifiedAt?: string;
   people?: string[];
   by?: string;
+  // Planned start date, for the timeline.
+  start?: string;
+  // Hours people logged on the task.
+  time?: TimeEntry[];
+  // When and by whom each person was assigned, for the inbox.
+  assigned?: Record<string, { by: string; at: string }>;
+}
+
+export interface TimeEntry {
+  by: string;
+  date: string;
+  hours: number;
+  note?: string;
+}
+
+// A notice for the whole team, kept in announcements.json on the data branch.
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  by: string;
+  at: string;
+  pinned?: boolean;
 }
 
 export interface GhUser {

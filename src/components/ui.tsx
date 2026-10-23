@@ -11,7 +11,7 @@ const AVATAR_COLORS = ["#F97316", "#2563EB", "#16A34A", "#7C3AED", "#DB2777", "#
 // Shows a photo when there is one, otherwise the person's initials on a colour picked from their ID.
 export function Avatar({ login, url, name, size = 24 }: { login: string; url?: string; name?: string; size?: number }) {
   const label = name || login;
-  if (url) return <img src={url} alt={label} title={label} width={size} height={size} className="shrink-0 rounded-full bg-slate-200 ring-2 ring-white" style={{ width: size, height: size }} />;
+  if (url) return <img src={url} alt={label} title={label} width={size} height={size} className="shrink-0 rounded-full bg-slate-200 ring-2 ring-surface" style={{ width: size, height: size }} />;
   const initials = label
     .split(/[\s._-]+/)
     .filter(Boolean)
@@ -20,7 +20,7 @@ export function Avatar({ login, url, name, size = 24 }: { login: string; url?: s
     .join("");
   const color = AVATAR_COLORS[[...login].reduce((n, c) => n + c.charCodeAt(0), 0) % AVATAR_COLORS.length];
   return (
-    <span title={label} className="inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white ring-2 ring-white" style={{ width: size, height: size, background: color, fontSize: size * 0.4 }}>
+    <span title={label} className="inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white ring-2 ring-surface" style={{ width: size, height: size, background: color, fontSize: size * 0.4 }}>
       {initials || "?"}
     </span>
   );
@@ -49,8 +49,8 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 pt-[8vh]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={cn("card w-full p-6 shadow-xl", wide ? "max-w-2xl" : "max-w-md")}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-[8vh] backdrop-blur-sm" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className={cn("card w-full p-6 shadow-2xl", wide ? "max-w-2xl" : "max-w-md")}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold">{title}</h2>
           <button onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-ink" aria-label="Close">
@@ -65,10 +65,10 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
 
 export function PageHeader({ title, crumb, children }: { title: string; crumb?: string; children?: React.ReactNode }) {
   return (
-    <header className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-6 py-4">
+    <header className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-surface px-6 py-5">
       <div className="min-w-0 flex-1 basis-56">
-        {crumb && <p className="truncate text-xs font-semibold text-slate-500">{crumb}</p>}
-        <h1 className="truncate text-xl font-extrabold tracking-tight">{title}</h1>
+        {crumb && <p className="truncate text-xs font-semibold uppercase tracking-wider text-slate-400">{crumb}</p>}
+        <h1 className="truncate text-2xl font-extrabold tracking-tight">{title}</h1>
       </div>
       {children}
     </header>
@@ -77,7 +77,12 @@ export function PageHeader({ title, crumb, children }: { title: string; crumb?: 
 
 export const ErrorNote = ({ error }: { error: string }) => (error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null);
 
-export const Empty = ({ children }: { children: React.ReactNode }) => <div className="card p-8 text-center text-sm text-slate-500">{children}</div>;
+export const Empty = ({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) => (
+  <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+    {icon && <span className="text-slate-300">{icon}</span>}
+    {children}
+  </div>
+);
 
 export const Spinner = ({ label = "Loading…" }: { label?: string }) => (
   <div className="flex items-center justify-center gap-2 p-10 text-sm text-slate-500">

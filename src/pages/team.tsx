@@ -3,7 +3,9 @@ import { getToken } from "@/lib/gh";
 import { MIN_PASSWORD, isTakenOnSite, normalizeId, removeLogin, saveLogin } from "@/lib/accounts";
 import { useData } from "@/lib/store";
 import { type Role, atLeast } from "@/lib/model";
-import { errorText } from "@/lib/utils";
+import { format, subDays } from "date-fns";
+import { BarChart3 } from "lucide-react";
+import { cn, errorText, today } from "@/lib/utils";
 import { Avatar, ErrorNote, Modal, PageHeader } from "@/components/ui";
 
 const ROLE_HELP: Record<Role, string> = {
@@ -21,6 +23,75 @@ function PasswordInput({ value, onChange }: { value: string; onChange: (v: strin
       <input value={value} onChange={(e) => onChange(e.target.value)} className="input font-mono" placeholder={`Password (at least ${MIN_PASSWORD} characters)`} autoComplete="new-password" minLength={MIN_PASSWORD} required />
       {value && value.length < MIN_PASSWORD && <span className="text-xs text-amber-700">{MIN_PASSWORD - value.length} more characters needed</span>}
     </div>
+  );
+}
+
+// Who has how much on their plate, and the hours they logged this week.
+function Workload() {
+  const { members, tasks } = useData();
+  const t0 = today();
+  const weekAgo = format(subDays(new Date(), 6), "yyyy-MM-dd");
+  const rows = members
+    .map((m) => {
+      const open = tasks.filter((t) => t.open && t.assignees.includes(m.login));
+      const hours = tasks.flatMap((t) => t.meta.time ?? []).filter((e) => e.by === m.login && e.date >= weekAgo).reduce((n, e) => n + e.hours, 0);
+      return {
+        m,
+        open: open.length,
+        overdue: open.filter((t) => t.meta.due && t.meta.due < t0).length,
+        points: open.reduce((n, t) => n + (t.meta.estimate ?? 0), 0),
+        hours,
+        done: tasks.filter((t) => !t.open && t.assignees.includes(m.login) && (t.closedAt ?? "") >= weekAgo).length,
+      };
+    })
+    .sort((a, b) => b.open - a.open);
+  const max = Math.max(1, ...rows.map((r) => r.open));
+  return (
+    <section className="card overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+        <BarChart3 size={16} className="text-brand-500" />
+        <h2 className="font-bold">Workload</h2>
+        <span className="ml-auto text-xs text-slate-500">Last 7 days for done and hours</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead>
+            <tr className="text-left text-xs font-semibold text-slate-500">
+              <th className="px-5 py-2">Person</th>
+              <th className="px-2 py-2">Open tasks</th>
+              <th className="px-2 py-2 text-right">Overdue</th>
+              <th className="px-2 py-2 text-right">Points</th>
+              <th className="px-2 py-2 text-right">Done</th>
+              <th className="px-5 py-2 text-right">Hours</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((r) => (
+              <tr key={r.m.login}>
+                <td className="px-5 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <Avatar login={r.m.login} url={r.m.avatar_url || undefined} name={r.m.name ?? undefined} size={26} />
+                    <span className="font-medium">{r.m.name || r.m.login}</span>
+                  </div>
+                </td>
+                <td className="w-1/3 px-2 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div className={cn("h-full rounded-full", r.open / max > 0.75 && r.open > 5 ? "bg-red-500" : "bg-brand-500")} style={{ width: `${(r.open / max) * 100}%` }} />
+                    </div>
+                    <span className="w-6 text-right font-semibold">{r.open}</span>
+                  </div>
+                </td>
+                <td className={cn("px-2 py-2.5 text-right font-semibold", r.overdue ? "text-red-600" : "text-slate-400")}>{r.overdue}</td>
+                <td className="px-2 py-2.5 text-right text-slate-600">{r.points || "–"}</td>
+                <td className="px-2 py-2.5 text-right text-green-700">{r.done}</td>
+                <td className="px-5 py-2.5 text-right font-semibold">{r.hours ? `${+r.hours.toFixed(1)}h` : "–"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -58,7 +129,7 @@ export function Team() {
 
   return (
     <>
-      <PageHeader title="Team" />
+      <PageHeader title="People & workload" crumb="Team" />
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6">
         <ErrorNote error={error} />
         {note && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{note}</p>}
@@ -100,6 +171,7 @@ export function Team() {
             </button>
           </form>
         )}
+        <Workload />
         <section className="card divide-y divide-slate-100">
           {members.map((m) => (
             <div key={m.login} className="flex flex-wrap items-center gap-3 px-4 py-3">

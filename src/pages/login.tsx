@@ -19,7 +19,7 @@ export function Login() {
   const working = busy || ws.loading;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-white p-4">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-surface p-4">
       <div className="card w-full max-w-md p-8 shadow-sm">
         <div className="mb-6 flex items-center gap-3">
           <img src="./favicon.svg" alt="" className="h-10 w-10" />

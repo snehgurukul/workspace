@@ -6,6 +6,36 @@ import { useData } from "@/lib/store";
 import { atLeast } from "@/lib/model";
 import { download, errorText } from "@/lib/utils";
 import { Avatar, ErrorNote, PageHeader } from "@/components/ui";
+import { type Theme, getTheme, setTheme } from "@/lib/theme";
+import { cn } from "@/lib/utils";
+
+function Appearance() {
+  const [theme, set] = useState<Theme>(getTheme);
+  const options: [Theme, string][] = [
+    ["light", "Light"],
+    ["dark", "Dark"],
+    ["system", "Same as my device"],
+  ];
+  return (
+    <section className="card flex flex-col gap-3 p-5">
+      <h2 className="font-bold">Appearance</h2>
+      <div className="flex flex-wrap gap-2">
+        {options.map(([v, label]) => (
+          <button
+            key={v}
+            onClick={() => {
+              setTheme(v);
+              set(v);
+            }}
+            className={cn("rounded-lg border px-3 py-2 text-sm font-semibold", theme === v ? "border-brand-500 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-600 hover:bg-slate-100")}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function ChangePassword({ id }: { id: string }) {
   const [pw, setPw] = useState("");
@@ -54,7 +84,7 @@ export function Settings() {
   const [copied, setCopied] = useState(false);
   const repoUrl = `https://github.com/${OWNER}/${REPO}`;
   const csv = () => {
-    const rows = [["Number", "Project", "Title", "Type", "Status", "Priority", "Assignees", "Due", "Estimate", "Sprint", "Release", "Open", "Created"]].concat(
+    const rows = [["Number", "Project", "Title", "Type", "Status", "Priority", "Assignees", "Due", "Estimate", "Sprint", "Release", "Open", "Created", "Hours logged"]].concat(
       tasks.map((t) => [
         String(t.number),
         t.project,
@@ -69,6 +99,7 @@ export function Settings() {
         t.release,
         t.open ? "yes" : "no",
         t.createdAt.slice(0, 10),
+        String((t.meta.time ?? []).reduce((n, e) => n + e.hours, 0) || ""),
       ]),
     );
     download("sneh-workspace-tasks.csv", rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n"), "text/csv");
@@ -94,6 +125,8 @@ export function Settings() {
             Sign out
           </button>
         </section>
+
+        <Appearance />
 
         {passwordLogin && <ChangePassword id={me.login} />}
 

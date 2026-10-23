@@ -22,6 +22,8 @@ import { Activity } from "@/pages/activity";
 import { Team } from "@/pages/team";
 import { Search } from "@/pages/search";
 import { Settings } from "@/pages/settings";
+import { InboxPage } from "@/pages/inbox";
+import { Timeline } from "@/pages/timeline";
 
 function Gate() {
   const ws = useWs();
@@ -31,6 +33,8 @@ function Gate() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
+        <Route path="inbox" element={<InboxPage />} />
+        <Route path="timeline" element={<Timeline />} />
         <Route path="my-tasks" element={<MyTasks />} />
         <Route path="projects" element={<Projects />} />
         <Route path="projects/:key" element={<Navigate to="board" replace />} />

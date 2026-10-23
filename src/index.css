@@ -2,18 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colour tokens. Values are "R G B" so Tailwind can add opacity. */
+:root {
+  --ink: 15 23 42;
+  --surface: 255 255 255;
+  --slate-50: 248 250 252;
+  --slate-100: 241 245 249;
+  --slate-200: 226 232 240;
+  --slate-300: 203 213 225;
+  --slate-400: 148 163 184;
+  --slate-500: 100 116 139;
+  --slate-600: 71 85 105;
+  --slate-700: 51 65 85;
+  --slate-800: 30 41 59;
+  --slate-900: 15 23 42;
+  --brand-50: 255 247 237;
+  --brand-100: 255 237 213;
+  --brand-700: 194 65 12;
+  color-scheme: light;
+}
+.dark {
+  --ink: 241 245 249;
+  --surface: 24 27 34;
+  --slate-50: 15 17 22;
+  --slate-100: 36 40 49;
+  --slate-200: 48 53 64;
+  --slate-300: 71 78 92;
+  --slate-400: 112 121 138;
+  --slate-500: 148 157 173;
+  --slate-600: 178 186 200;
+  --slate-700: 203 210 222;
+  --slate-800: 226 232 240;
+  --slate-900: 241 245 249;
+  --brand-50: 58 33 17;
+  --brand-100: 84 44 18;
+  --brand-700: 253 186 116;
+  color-scheme: dark;
+}
+
 @layer base {
   body { @apply bg-slate-50 text-ink antialiased; }
+  ::selection { @apply bg-brand-100; }
 }
 @layer components {
-  .btn { @apply inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-primary { @apply btn bg-brand-500 text-white hover:bg-brand-600; }
-  .btn-secondary { @apply btn border border-slate-200 bg-white text-ink hover:bg-slate-100; }
+  .btn { @apply inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-brand-500 text-white shadow-sm shadow-brand-500/30 hover:bg-brand-600; }
+  .btn-secondary { @apply btn border border-slate-200 bg-surface text-ink shadow-soft hover:bg-slate-100; }
   .btn-ghost { @apply btn text-slate-600 hover:bg-slate-100 hover:text-ink; }
-  .input { @apply h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100; }
+  .input { @apply h-9 w-full rounded-lg border border-slate-200 bg-surface px-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20; }
+  textarea.input { @apply h-auto py-2; }
   .label { @apply flex flex-col gap-1 text-xs font-semibold text-slate-600; }
-  .card { @apply rounded-xl border border-slate-200 bg-white; }
-  .tag { @apply inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide; }
+  .card { @apply rounded-xl border border-slate-200 bg-surface shadow-soft; }
+  .card-hover { @apply transition hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-lift; }
+  .tag { @apply inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide; }
+  .section-title { @apply mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-500; }
   .doc { @apply text-sm leading-relaxed text-slate-800; }
   .doc h1 { @apply mb-3 mt-6 text-2xl font-extrabold; }
   .doc h2 { @apply mb-2 mt-5 text-xl font-bold; }
@@ -24,7 +66,7 @@
   .doc li > ul, .doc li > ol { @apply my-0; }
   .doc a { @apply font-medium text-brand-600 underline; }
   .doc code { @apply rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.85em]; }
-  .doc pre { @apply my-3 overflow-x-auto rounded-lg bg-slate-900 p-3 text-slate-100; }
+  .doc pre { @apply my-3 overflow-x-auto rounded-lg p-3; background: #0f172a; color: #f1f5f9; }
   .doc pre code { @apply bg-transparent p-0; }
   .doc blockquote { @apply my-3 border-l-4 border-slate-200 pl-3 text-slate-600; }
   .doc table { @apply my-3 w-full border-collapse text-left; }
@@ -33,3 +75,20 @@
   .doc hr { @apply my-4 border-slate-200; }
   .doc input[type="checkbox"] { @apply mr-1; }
 }
+
+/* Coloured pills and notes stay readable in dark mode. */
+.dark .bg-red-50, .dark .bg-red-100 { background-color: rgb(127 29 29 / 0.35); }
+.dark .bg-green-50, .dark .bg-green-100 { background-color: rgb(20 83 45 / 0.4); }
+.dark .bg-blue-100 { background-color: rgb(30 58 138 / 0.45); }
+.dark .bg-violet-100 { background-color: rgb(76 29 149 / 0.45); }
+.dark .bg-sky-100 { background-color: rgb(12 74 110 / 0.45); }
+.dark .bg-amber-50, .dark .bg-amber-100, .dark .bg-yellow-100 { background-color: rgb(120 53 15 / 0.4); }
+.dark .bg-orange-100, .dark .bg-orange-200 { background-color: rgb(124 45 18 / 0.45); }
+.dark .text-red-700, .dark .text-red-600 { color: #fca5a5; }
+.dark .text-green-700, .dark .text-green-600 { color: #86efac; }
+.dark .text-blue-700 { color: #93c5fd; }
+.dark .text-violet-700, .dark .text-violet-600 { color: #c4b5fd; }
+.dark .text-sky-700 { color: #7dd3fc; }
+.dark .text-amber-700, .dark .text-amber-800, .dark .text-amber-900, .dark .text-yellow-800 { color: #fcd34d; }
+.dark .text-orange-700, .dark .text-orange-800 { color: #fdba74; }
+.dark .bg-red-600.text-white { color: #fff; }

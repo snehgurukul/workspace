@@ -8,6 +8,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <title>Sneh Workspace</title>
     <script>
+      // Apply dark mode before the page draws, so it doesn't flash white.
+      try {
+        var th = localStorage.getItem("sneh.theme");
+        if (th === "dark" || (th !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
+    <script>
       // Show a message instead of a blank page if the app fails to start.
       // A missing app file usually means an old copy of this page was cached during an update, so reload a fresh one once.
       addEventListener(

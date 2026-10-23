@@ -82,7 +82,7 @@ export function Calendar() {
                       key={it.id}
                       to={it.to}
                       title={it.title}
-                      className={cn("truncate rounded px-1 py-0.5 text-[11px] font-medium", it.kind === "sprint" ? "text-white" : "bg-white ring-1 ring-inset")}
+                      className={cn("truncate rounded px-1 py-0.5 text-[11px] font-medium", it.kind === "sprint" ? "text-white" : "bg-surface ring-1 ring-inset")}
                       style={it.kind === "sprint" ? { background: it.color } : { color: it.color, borderColor: it.color, boxShadow: `inset 0 0 0 1px ${it.color}55` }}
                     >
                       {it.title}

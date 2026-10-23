@@ -89,10 +89,11 @@ export async function gh<T = unknown>(path: string, init: Init = {}): Promise<T>
 }
 
 // Follows GitHub's Link headers to collect every page.
-export async function ghAll<T>(path: string): Promise<T[]> {
+// Follows GitHub's page links. maxPages stops early for feeds where older items don't matter.
+export async function ghAll<T>(path: string, maxPages = Infinity): Promise<T[]> {
   const out: T[] = [];
   let next: string | null = path + (path.includes("?") ? "&" : "?") + "per_page=100";
-  while (next) {
+  for (let page = 0; next && page < maxPages; page++) {
     const res = await request(next);
     out.push(...((await res.json()) as T[]));
     next = res.headers.get("link")?.match(/<([^>]+)>;\s*rel="next"/)?.[1] ?? null;

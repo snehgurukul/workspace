@@ -4,8 +4,8 @@ import { format, formatDistanceToNow } from "date-fns";
 import { Ban, CheckCircle2, ExternalLink, GitCommitHorizontal, GitMerge, GitPullRequest, Trash2, X } from "lucide-react";
 import { gh, repoPath } from "@/lib/gh";
 import { useData } from "@/lib/store";
-import { type GhUser, PRIORITIES, SEVERITIES, TYPES, type Priority, type Severity, type Task, type TaskType, atLeast, taskKey } from "@/lib/model";
-import { cn, errorText } from "@/lib/utils";
+import { type GhUser, type TimeEntry, PRIORITIES, SEVERITIES, TYPES, type Priority, type Severity, type Task, type TaskType, atLeast, taskKey } from "@/lib/model";
+import { cn, errorText, today } from "@/lib/utils";
 import { Avatar, ErrorNote, Markdown, Spinner, TypeTag } from "@/components/ui";
 import { Attachments } from "@/components/file-list";
 import { MemberAvatar } from "@/components/task-bits";
@@ -40,6 +40,69 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-slate-500">{title}</h2>
       {children}
     </section>
+  );
+}
+
+// Hours people spent on the task, kept in the task's hidden details.
+function TimeLog({ task, canEdit, busy, onSave }: { task: Task; canEdit: boolean; busy: boolean; onSave: (t: TimeEntry[]) => void }) {
+  const { me, members, role } = useData();
+  const [hours, setHours] = useState("");
+  const [date, setDate] = useState(today());
+  const [note, setNote] = useState("");
+  const entries = task.meta.time ?? [];
+  const total = entries.reduce((n, e) => n + e.hours, 0);
+  const est = task.meta.estimate;
+  const nameOf = (l: string) => members.find((m) => m.login === l)?.name || l;
+  return (
+    <div className="card p-4 text-sm">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <p>
+          <span className="text-2xl font-extrabold">{+total.toFixed(2)}</span> <span className="text-slate-500">hours logged</span>
+        </p>
+        {est ? <p className="text-slate-500">Estimate {est} {est === 1 ? "point" : "points"}</p> : null}
+      </div>
+      {entries.length > 0 && (
+        <div className="mt-3 divide-y divide-slate-100 border-t border-slate-100">
+          {[...entries]
+            .map((e, i) => ({ e, i }))
+            .sort((a, b) => b.e.date.localeCompare(a.e.date))
+            .map(({ e, i }) => (
+              <div key={i} className="flex items-center gap-2 py-1.5">
+                <Avatar login={e.by} name={nameOf(e.by)} size={20} />
+                <span className="font-medium">{nameOf(e.by)}</span>
+                <span className="font-semibold">{e.hours}h</span>
+                <span className="min-w-0 flex-1 truncate text-slate-500">{e.note}</span>
+                <span className="text-xs text-slate-400">{format(new Date(e.date), "d MMM")}</span>
+                {canEdit && (e.by === me.login || atLeast(role, "manager")) && (
+                  <button disabled={busy} onClick={() => onSave(entries.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-600" aria-label="Remove">
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
+      {canEdit && (
+        <form
+          className="mt-3 flex flex-wrap gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const h = Number(hours);
+            if (!(h > 0)) return;
+            onSave([...entries, { by: me.login, date, hours: h, ...(note.trim() ? { note: note.trim() } : {}) }]);
+            setHours("");
+            setNote("");
+          }}
+        >
+          <input value={hours} onChange={(e) => setHours(e.target.value)} type="number" min={0.25} max={24} step={0.25} required className="input h-8 w-24" placeholder="Hours" aria-label="Hours" />
+          <input value={date} onChange={(e) => setDate(e.target.value)} type="date" max={today()} className="input h-8 w-36" aria-label="Date" />
+          <input value={note} onChange={(e) => setNote(e.target.value)} className="input h-8 min-w-32 flex-1" placeholder="What did you do? (optional)" />
+          <button disabled={busy} className="btn-secondary h-8">
+            Log time
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
 
@@ -259,6 +322,10 @@ function TaskView({ task }: { task: Task }) {
             </div>
           </Section>
 
+          <Section title="Time">
+            <TimeLog task={task} canEdit={canEdit} busy={busy} onSave={(time) => patch({ meta: { time } })} />
+          </Section>
+
           <Section title="Dependencies">
             <div className="card flex flex-col gap-3 p-4 text-sm">
               {[
@@ -414,7 +481,7 @@ function TaskView({ task }: { task: Task }) {
         </div>
       </div>
 
-      <aside className="w-full shrink-0 border-t border-slate-200 bg-white p-6 lg:w-80 lg:overflow-y-auto lg:border-l lg:border-t-0">
+      <aside className="w-full shrink-0 border-t border-slate-200 bg-surface p-6 lg:w-80 lg:overflow-y-auto lg:border-l lg:border-t-0">
         <div className="flex flex-col gap-4">
           <label className="label">
             Status
@@ -464,8 +531,12 @@ function TaskView({ task }: { task: Task }) {
               </select>
             </label>
             <label className="label">
+              Start date
+              <input disabled={!canEdit || busy} type="date" value={task.meta.start ?? ""} max={task.meta.due} onChange={(e) => patch({ meta: { start: e.target.value || undefined } })} className="input" />
+            </label>
+            <label className="label">
               Due date
-              <input disabled={!canEdit || busy} type="date" value={task.meta.due ?? ""} onChange={(e) => patch({ meta: { due: e.target.value || undefined } })} className="input" />
+              <input disabled={!canEdit || busy} type="date" value={task.meta.due ?? ""} min={task.meta.start} onChange={(e) => patch({ meta: { due: e.target.value || undefined } })} className="input" />
             </label>
             <label className="label">
               Estimate
