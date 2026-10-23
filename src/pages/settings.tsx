@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { Download, ExternalLink, KeyRound, LogOut } from "lucide-react";
 import { OWNER, REPO, getToken } from "@/lib/gh";
 import { MIN_PASSWORD, saveLogin } from "@/lib/accounts";
 import { useData } from "@/lib/store";
@@ -73,7 +73,7 @@ function ChangePassword({ id }: { id: string }) {
       <ErrorNote error={error} />
       {done && <p className="text-sm text-green-700">Password changed. Use the new one next time you sign in.</p>}
       <button disabled={busy} className="btn-primary self-start">
-        {busy ? "Saving…" : "Change password"}
+        <KeyRound size={15} /> {busy ? "Saving…" : "Change password"}
       </button>
     </form>
   );
@@ -122,7 +122,7 @@ export function Settings() {
             </a>
           )}
           <button onClick={signOut} className="btn-secondary">
-            Sign out
+            <LogOut size={15} /> Sign out
           </button>
         </section>
 
@@ -153,7 +153,7 @@ export function Settings() {
           <p className="text-sm text-slate-600">Everything also lives in GitHub itself: tasks are issues and docs and files are on the workspace-data branch.</p>
           <div className="flex flex-wrap gap-2">
             <button onClick={csv} className="btn-secondary">
-              Tasks as CSV
+              <Download size={15} /> Tasks as CSV
             </button>
             {atLeast(role, "admin") && (
               <button

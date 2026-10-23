@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
-import { Ban, CheckCircle2, ExternalLink, GitCommitHorizontal, GitMerge, GitPullRequest, Trash2, X } from "lucide-react";
+import { Ban, CheckCircle2, Clock, ExternalLink, GitCommitHorizontal, GitMerge, GitPullRequest, Save, Send, Trash2, X } from "lucide-react";
 import { gh, repoPath } from "@/lib/gh";
 import { useData } from "@/lib/store";
 import { type GhUser, type TimeEntry, PRIORITIES, SEVERITIES, TYPES, type Priority, type Severity, type Task, type TaskType, atLeast, taskKey } from "@/lib/model";
@@ -98,7 +98,7 @@ function TimeLog({ task, canEdit, busy, onSave }: { task: Task; canEdit: boolean
           <input value={date} onChange={(e) => setDate(e.target.value)} type="date" max={today()} className="input h-8 w-36" aria-label="Date" />
           <input value={note} onChange={(e) => setNote(e.target.value)} className="input h-8 min-w-32 flex-1" placeholder="What did you do? (optional)" />
           <button disabled={busy} className="btn-secondary h-8">
-            Log time
+            <Clock size={15} /> Log time
           </button>
         </form>
       )}
@@ -231,10 +231,10 @@ function TaskView({ task }: { task: Task }) {
                 <textarea autoFocus value={description} onChange={(e) => setDescription(e.target.value)} className="input min-h-40 py-2" />
                 <div className="mt-2 flex gap-2">
                   <button disabled={busy} onClick={() => (setEditing(false), patch({ description }))} className="btn-primary h-8">
-                    Save
+                    <Save size={15} /> Save
                   </button>
                   <button onClick={() => (setDescription(task.description), setEditing(false))} className="btn-secondary h-8">
-                    Cancel
+                    <X size={15} /> Cancel
                   </button>
                 </div>
               </div>
@@ -457,7 +457,7 @@ function TaskView({ task }: { task: Task }) {
                       placeholder="Write a comment. @mention a teammate to notify them."
                     />
                     <button disabled={busy || !comment.trim()} className="btn-primary mt-2">
-                      Comment
+                      <Send size={15} /> Comment
                     </button>
                   </form>
                 )}

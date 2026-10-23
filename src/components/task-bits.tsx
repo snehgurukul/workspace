@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
-import { Ban, CalendarDays, MessageSquare } from "lucide-react";
+import { Ban, CalendarDays, MessageSquare, Plus } from "lucide-react";
 import { type NewTask, useData } from "@/lib/store";
 import { type Priority, type Project, type Severity, type Task, type TaskType, PRIORITIES, SEVERITIES, TYPES, atLeast, taskKey } from "@/lib/model";
 import { errorText } from "@/lib/utils";
@@ -121,7 +121,7 @@ export function NoProjects() {
       <p className="mt-1 text-sm text-slate-500">{atLeast(role, "manager") ? "Create your first project to get started." : "Ask a manager to create a project."}</p>
       {atLeast(role, "manager") && (
         <Link to="/projects?new=1" className="btn-primary mt-4">
-          Create a project
+          <Plus size={15} /> Create a project
         </Link>
       )}
     </div>
@@ -135,7 +135,7 @@ export function NewTaskButton({ defaults, label = "New task", className = "btn-p
   return (
     <>
       <button onClick={() => setOpen(true)} className={className}>
-        + {label}
+        <Plus size={15} /> {label}
       </button>
       {open && <TaskDialog defaults={defaults} onClose={() => setOpen(false)} />}
     </>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { readJson, setPageToken, setToken, updateJson } from "@/lib/gh";
 import { MIN_PASSWORD, normalizeId, removeKey, saveLogin, unlockInvite } from "@/lib/accounts";
@@ -68,7 +69,7 @@ export function Join() {
           <>
             <ErrorNote error={error} />
             <a href="#/" className="btn-secondary mt-4">
-              Go to sign in
+              <ArrowLeft size={15} /> Go to sign in
             </a>
           </>
         ) : !state ? (

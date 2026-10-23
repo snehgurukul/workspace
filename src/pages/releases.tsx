@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CheckCircle2, Pencil, Plus, Save } from "lucide-react";
 import { format } from "date-fns";
 import { useData } from "@/lib/store";
 import { type Release, atLeast, uid } from "@/lib/model";
@@ -37,7 +38,7 @@ export function Releases() {
         <ProjectPicker value={project} onChange={pick} projects={projects} />
         {canManage && (
           <button onClick={() => setEditing("new")} className="btn-primary">
-            + New release
+            <Plus size={15} /> New release
           </button>
         )}
       </PageHeader>
@@ -75,11 +76,11 @@ export function Releases() {
                   {canManage && (
                     <div className="flex gap-2 border-t border-slate-100 px-5 py-3">
                       <button onClick={() => setEditing(r)} className="btn-secondary h-8">
-                        Edit
+                        <Pencil size={15} /> Edit
                       </button>
                       {r.state !== "released" && (
                         <button disabled={busy} onClick={() => save({ ...r, state: "released", date: r.date || new Date().toISOString().slice(0, 10) })} className="btn-primary h-8">
-                          Mark released
+                          <CheckCircle2 size={15} /> Mark released
                         </button>
                       )}
                       <button
@@ -148,7 +149,7 @@ export function Releases() {
             </label>
             <ErrorNote error={error} />
             <button disabled={busy} className="btn-primary justify-center">
-              {busy ? "Saving…" : "Save release"}
+              <Save size={15} /> {busy ? "Saving…" : "Save release"}
             </button>
           </form>
         </Modal>

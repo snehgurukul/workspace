@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useData } from "@/lib/store";
 import { taskKey } from "@/lib/model";
 import { cn, download, today } from "@/lib/utils";
@@ -56,7 +56,7 @@ export function Calendar() {
             <ChevronLeft size={16} />
           </button>
           <button onClick={() => setMonth(startOfMonth(new Date()))} className="btn-secondary">
-            Today
+            <CalendarDays size={15} /> Today
           </button>
           <button onClick={() => setMonth(addMonths(month, 1))} className="btn-secondary px-2" aria-label="Next month">
             <ChevronRight size={16} />

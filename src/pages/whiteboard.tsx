@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Circle, Copy, Frame, Hand, ListPlus, Maximize, MousePointer2, MoveUpRight, Pencil, SmilePlus, Square, StickyNote, Trash2, Type, ZoomIn, ZoomOut } from "lucide-react";
+import { Circle, Copy, Frame, Hand, ListPlus, Maximize, MousePointer2, MoveUpRight, Pencil, Plus, SmilePlus, Square, StickyNote, Trash2, Type, ZoomIn, ZoomOut } from "lucide-react";
 import { GitHubError, deletePath, listDir, readText, writeText } from "@/lib/gh";
 import { useData } from "@/lib/store";
 import { atLeast, uid } from "@/lib/model";
@@ -84,7 +84,7 @@ export function Whiteboards() {
             }}
             className="btn-primary"
           >
-            + New whiteboard
+            <Plus size={15} /> New whiteboard
           </button>
         )}
       </PageHeader>

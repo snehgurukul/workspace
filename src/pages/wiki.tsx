@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { ChevronRight, FileText, History, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, FileText, History, Pencil, Plus, RotateCcw, Save, Trash2, X } from "lucide-react";
 import { type CommitInfo, dataTree, deletePath, fileHistory, readText, writeText } from "@/lib/gh";
 import { useData } from "@/lib/store";
 import { atLeast } from "@/lib/model";
@@ -157,10 +157,10 @@ export function Wiki() {
                 )}
                 <div className="flex gap-2">
                   <button disabled={busy} onClick={save} className="btn-primary">
-                    {busy ? "Saving…" : "Save"}
+                    <Save size={15} /> {busy ? "Saving…" : "Save"}
                   </button>
                   <button disabled={busy} onClick={() => setEditing(false)} className="btn-secondary">
-                    Cancel
+                    <X size={15} /> Cancel
                   </button>
                   <span className="ml-auto self-center text-xs text-slate-400">Ctrl+S saves</span>
                 </div>
@@ -239,7 +239,7 @@ export function Wiki() {
                       </button>
                     )}
                     <button onClick={() => setRev(null)} className="btn-secondary h-8">
-                      Back to current
+                      <RotateCcw size={15} /> Back to current
                     </button>
                   </div>
                 )}
@@ -274,7 +274,7 @@ export function Wiki() {
             </label>
             <ErrorNote error={error} />
             <button disabled={busy} className="btn-primary justify-center">
-              Create page
+              <Plus size={15} /> Create page
             </button>
           </form>
         </Modal>

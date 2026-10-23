@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Bug, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Bug, Pencil, Play, Plus, Save, Trash2 } from "lucide-react";
 import { readJson, updateJson } from "@/lib/gh";
 import { useData } from "@/lib/store";
 import { atLeast, uid } from "@/lib/model";
@@ -93,7 +93,7 @@ export function Qa() {
       <PageHeader title={run ? run.name : "QA"} crumb={run ? `QA / ${project.name}` : undefined}>
         {run ? (
           <button onClick={() => setRunId("")} className="btn-secondary">
-            Back to QA
+            <ArrowLeft size={15} /> Back to QA
           </button>
         ) : (
           <>
@@ -101,7 +101,7 @@ export function Qa() {
             {canEdit && (
               <>
                 <button onClick={() => setEditCase("new")} className="btn-secondary">
-                  + Test case
+                  <Plus size={15} /> Test case
                 </button>
                 <button
                   disabled={busy || !data?.cases.length}
@@ -113,7 +113,7 @@ export function Qa() {
                   }}
                   className="btn-primary"
                 >
-                  + Start test run
+                  <Play size={15} /> Start test run
                 </button>
               </>
             )}
@@ -274,7 +274,7 @@ export function Qa() {
               <input name="expected" defaultValue={editCase === "new" ? "" : editCase.expected} className="input" />
             </label>
             <button disabled={busy} className="btn-primary justify-center">
-              {busy ? "Saving…" : "Save test case"}
+              <Save size={15} /> {busy ? "Saving…" : "Save test case"}
             </button>
           </form>
         </Modal>

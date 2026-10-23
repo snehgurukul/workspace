@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { type Category, type Status, atLeast } from "@/lib/model";
 import { PROJECT_COLORS, errorText } from "@/lib/utils";
@@ -88,7 +88,7 @@ export function ProjectSettings() {
             </div>
           </div>
           <button disabled={!!busy} onClick={saveDetails} className="btn-primary self-start">
-            {busy === "details" ? "Saving…" : "Save details"}
+            <Save size={15} /> {busy === "details" ? "Saving…" : "Save details"}
           </button>
         </section>
 
@@ -118,10 +118,10 @@ export function ProjectSettings() {
           ))}
           <div className="flex gap-2">
             <button onClick={() => setRows([...rows, { name: "", category: "doing" }])} className="btn-secondary">
-              + Add status
+              <Plus size={15} /> Add status
             </button>
             <button disabled={!!busy} onClick={saveWorkflow} className="btn-primary">
-              {busy === "workflow" ? "Saving…" : "Save workflow"}
+              <Save size={15} /> {busy === "workflow" ? "Saving…" : "Save workflow"}
             </button>
           </div>
         </section>

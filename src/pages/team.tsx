@@ -207,7 +207,7 @@ export function Team() {
                 ))}
               </select>
               <button disabled={busy || !name.trim()} className="btn-primary">
-                {busy ? "Creating…" : "Create invite link"}
+                <Link2 size={15} /> {busy ? "Creating…" : "Create invite link"}
               </button>
             </div>
           </form>

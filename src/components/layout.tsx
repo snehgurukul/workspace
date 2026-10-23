@@ -39,45 +39,45 @@ const GROUPS = [
   {
     label: "",
     items: [
-      { to: "/", label: "Home", icon: Home, end: true },
-      { to: "/inbox", label: "Inbox", icon: Inbox },
-      { to: "/my-tasks", label: "My tasks", icon: CheckSquare },
+      { to: "/", label: "Home", icon: Home, tone: "bg-orange-100 text-orange-700", end: true },
+      { to: "/inbox", label: "Inbox", icon: Inbox, tone: "bg-blue-100 text-blue-700" },
+      { to: "/my-tasks", label: "My tasks", icon: CheckSquare, tone: "bg-green-100 text-green-700" },
     ],
   },
   {
     label: "Plan",
     items: [
-      { to: "/projects", label: "Projects", icon: FolderKanban, end: true },
-      { to: "/timeline", label: "Timeline", icon: GanttChartSquare },
-      { to: "/sprints", label: "Sprints", icon: Timer },
-      { to: "/releases", label: "Releases", icon: Rocket },
-      { to: "/calendar", label: "Calendar", icon: CalendarDays },
+      { to: "/projects", label: "Projects", icon: FolderKanban, tone: "bg-violet-100 text-violet-700", end: true },
+      { to: "/timeline", label: "Timeline", icon: GanttChartSquare, tone: "bg-sky-100 text-sky-700" },
+      { to: "/sprints", label: "Sprints", icon: Timer, tone: "bg-amber-100 text-amber-800" },
+      { to: "/releases", label: "Releases", icon: Rocket, tone: "bg-pink-100 text-pink-700" },
+      { to: "/calendar", label: "Calendar", icon: CalendarDays, tone: "bg-red-100 text-red-700" },
     ],
   },
   {
     label: "Quality",
     items: [
-      { to: "/bugs", label: "Bugs", icon: Bug },
-      { to: "/qa", label: "QA", icon: FlaskConical },
+      { to: "/bugs", label: "Bugs", icon: Bug, tone: "bg-red-100 text-red-700" },
+      { to: "/qa", label: "QA", icon: FlaskConical, tone: "bg-teal-100 text-teal-700" },
     ],
   },
   {
     label: "Knowledge",
     items: [
-      { to: "/wiki", label: "Wiki", icon: FileText },
-      { to: "/files", label: "Files", icon: FolderOpen },
-      { to: "/whiteboard", label: "Whiteboard", icon: PenTool },
+      { to: "/wiki", label: "Wiki", icon: FileText, tone: "bg-indigo-100 text-indigo-700" },
+      { to: "/files", label: "Files", icon: FolderOpen, tone: "bg-amber-100 text-amber-800" },
+      { to: "/whiteboard", label: "Whiteboard", icon: PenTool, tone: "bg-pink-100 text-pink-700" },
     ],
   },
   {
     label: "Team",
     items: [
-      { to: "/team", label: "People & workload", icon: Users },
-      { to: "/activity", label: "Activity", icon: Activity },
+      { to: "/team", label: "People & workload", icon: Users, tone: "bg-blue-100 text-blue-700" },
+      { to: "/activity", label: "Activity", icon: Activity, tone: "bg-green-100 text-green-700" },
     ],
   },
 ];
-const PAGES = GROUPS.flatMap((g) => g.items).concat([{ to: "/settings", label: "Settings", icon: Settings }]);
+const PAGES = GROUPS.flatMap((g) => g.items).concat([{ to: "/settings", label: "Settings", icon: Settings, tone: "bg-slate-200 text-slate-700" }]);
 
 const navItem = (active: boolean) =>
   cn("group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition", active ? "bg-surface text-ink shadow-soft ring-1 ring-slate-200" : "text-slate-600 hover:bg-slate-200/60 hover:text-ink");
@@ -100,11 +100,13 @@ function Sidebar({ onNavigate }: { onNavigate: () => void }) {
         {GROUPS.map((g) => (
           <div key={g.label} className="mt-3 first:mt-1">
             {g.label && <p className="px-2.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{g.label}</p>}
-            {g.items.map(({ to, label, icon: Icon, end }) => (
+            {g.items.map(({ to, label, icon: Icon, end, tone }) => (
               <NavLink key={to} to={to} end={end} onClick={onNavigate} className={({ isActive }) => navItem(isActive)}>
                 {({ isActive }) => (
                   <>
-                    <Icon size={16} className={isActive ? "text-brand-500" : "text-slate-400 group-hover:text-slate-600"} />
+                    <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition", tone, !isActive && "opacity-80 group-hover:opacity-100")}>
+                      <Icon size={14} strokeWidth={2.25} />
+                    </span>
                     <span className="flex-1">{label}</span>
                     {to === "/inbox" && unread > 0 && <span className="rounded-full bg-brand-500 px-1.5 text-[10px] font-bold leading-4 text-white">{unread}</span>}
                   </>

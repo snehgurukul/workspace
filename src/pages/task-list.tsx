@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Download } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { useData } from "@/lib/store";
 import { PRIORITIES, type Task } from "@/lib/model";
@@ -51,7 +52,7 @@ export function TaskList() {
           <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} /> Show done
         </label>
         <button onClick={csv} className="btn-ghost ml-auto h-8">
-          Download CSV
+          <Download size={15} /> Download CSV
         </button>
       </div>
       <main className="p-6">

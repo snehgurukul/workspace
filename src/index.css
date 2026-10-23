@@ -92,3 +92,9 @@
 .dark .text-amber-700, .dark .text-amber-800, .dark .text-amber-900, .dark .text-yellow-800 { color: #fcd34d; }
 .dark .text-orange-700, .dark .text-orange-800 { color: #fdba74; }
 .dark .bg-red-600.text-white { color: #fff; }
+.dark .bg-pink-100 { background-color: rgb(131 24 67 / 0.45); }
+.dark .bg-teal-100 { background-color: rgb(19 78 74 / 0.45); }
+.dark .bg-indigo-100 { background-color: rgb(49 46 129 / 0.5); }
+.dark .text-pink-700 { color: #f9a8d4; }
+.dark .text-teal-700 { color: #5eead4; }
+.dark .text-indigo-700 { color: #a5b4fc; }

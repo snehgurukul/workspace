@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { addDays, format, formatDistanceToNow, subDays } from "date-fns";
-import { AlarmClock, Bug, CalendarClock, CheckCircle2, ListTodo, Megaphone, Pin, Trash2 } from "lucide-react";
+import { AlarmClock, Bug, CalendarClock, CheckCircle2, ListTodo, Megaphone, Pin, Plus, Trash2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { atLeast, taskKey, uid } from "@/lib/model";
 import { cn, errorText, today } from "@/lib/utils";
@@ -47,7 +47,7 @@ function Announcements() {
         <Megaphone size={14} /> Announcements
         {canPost && (
           <button onClick={() => setOpen(true)} className="ml-auto text-xs font-semibold normal-case tracking-normal text-brand-600 hover:underline">
-            + Post
+            <Plus size={13} className="inline" /> Post
           </button>
         )}
       </div>
@@ -110,7 +110,7 @@ function Announcements() {
             </label>
             <ErrorNote error={error} />
             <button disabled={busy || !title.trim()} className="btn-primary self-start">
-              {busy ? "Posting…" : "Post announcement"}
+              <Megaphone size={15} /> {busy ? "Posting…" : "Post announcement"}
             </button>
           </form>
         </Modal>

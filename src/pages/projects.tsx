@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useData } from "@/lib/store";
 import { DEFAULT_STATUSES, atLeast } from "@/lib/model";
@@ -19,7 +20,7 @@ export function Projects() {
   };
   return (
     <>
-      <PageHeader title="Projects">{atLeast(role, "manager") && <button onClick={() => setOpen(true)} className="btn-primary">+ New project</button>}</PageHeader>
+      <PageHeader title="Projects">{atLeast(role, "manager") && <button onClick={() => setOpen(true)} className="btn-primary"><Plus size={15} /> New project</button>}</PageHeader>
       <main className="mx-auto grid w-full max-w-6xl gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
         {config.projects.map((p) => {
           const pt = tasks.filter((t) => t.project === p.key);
@@ -95,7 +96,7 @@ export function Projects() {
             </div>
             <ErrorNote error={error} />
             <button disabled={busy} className="btn-primary justify-center">
-              {busy ? "Creating…" : "Create project"}
+              <Plus size={15} /> {busy ? "Creating…" : "Create project"}
             </button>
           </form>
         </Modal>

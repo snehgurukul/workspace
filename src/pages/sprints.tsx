@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CheckCircle2, Pencil, Plus, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { useData } from "@/lib/store";
@@ -74,7 +75,7 @@ function SprintDialog({ project, sprint, onClose }: { project: string; sprint?: 
         </div>
         <ErrorNote error={error} />
         <button disabled={busy} className="btn-primary justify-center">
-          {busy ? "Saving…" : "Save sprint"}
+          <Save size={15} /> {busy ? "Saving…" : "Save sprint"}
         </button>
       </form>
     </Modal>
@@ -113,7 +114,7 @@ export function Sprints() {
         <ProjectPicker value={project} onChange={pick} projects={projects} />
         {canManage && (
           <button onClick={() => setDialog("new")} className="btn-primary">
-            + New sprint
+            <Plus size={15} /> New sprint
           </button>
         )}
       </PageHeader>
@@ -140,10 +141,10 @@ export function Sprints() {
                 {canManage && (
                   <div className="flex gap-2">
                     <button onClick={() => setDialog(s)} className="btn-secondary h-8">
-                      Edit
+                      <Pencil size={15} /> Edit
                     </button>
                     <button onClick={() => setClosing(s)} className="btn-primary h-8">
-                      Complete
+                      <CheckCircle2 size={15} /> Complete
                     </button>
                   </div>
                 )}
@@ -244,7 +245,7 @@ export function Sprints() {
                 ))}
             </select>
             <button disabled={busy} className="btn-primary justify-center">
-              {busy ? "Completing…" : "Complete sprint"}
+              <CheckCircle2 size={15} /> {busy ? "Completing…" : "Complete sprint"}
             </button>
           </form>
         </Modal>
