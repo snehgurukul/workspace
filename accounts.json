@@ -1,1 +1,8 @@
-{}
+{
+ "C12iwMeFeHapGS1E8MtiHuirgxE3Nyx9": {
+  "salt": "NGEhgOyxNig9bqcER05yyQ==",
+  "iv": "hYiTGZse2umDiO9N",
+  "data": "03gn6Zm4KzhK+iCfjX/Zwq41jtDPQRiSzvMdLT/xjw9mEyefwa+1Xx8lnGmxLAbB0QiMrOR9ISE=",
+  "iterations": 600000
+ }
+}
