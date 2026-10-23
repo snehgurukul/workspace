@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { getToken } from "@/lib/gh";
-import { MIN_PASSWORD, normalizeId, removeLogin, saveLogin } from "@/lib/accounts";
+import { useCallback, useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Check, Copy, Link2, Mail, MessageCircle, UserPlus } from "lucide-react";
+import { getToken, readJson, updateJson } from "@/lib/gh";
+import { newInviteCode, removeKey, removeLogin, saveInviteLock } from "@/lib/accounts";
 import { useData } from "@/lib/store";
-import { type Role, atLeast } from "@/lib/model";
+import { type Invite, type Role, atLeast, uid } from "@/lib/model";
 import { format, subDays } from "date-fns";
 import { BarChart3 } from "lucide-react";
 import { cn, errorText, today } from "@/lib/utils";
@@ -15,17 +17,6 @@ const ROLE_HELP: Record<Role, string> = {
   viewer: "Read only",
 };
 const ROLES: Role[] = ["member", "manager", "viewer", "admin"];
-const ID_RE = /^[a-z0-9][a-z0-9._-]{2,31}$/;
-
-function PasswordInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="input font-mono" placeholder={`Password (at least ${MIN_PASSWORD} characters)`} autoComplete="new-password" minLength={MIN_PASSWORD} required />
-      {value && value.length < MIN_PASSWORD && <span className="text-xs text-amber-700">{MIN_PASSWORD - value.length} more characters needed</span>}
-    </div>
-  );
-}
-
 // Who has how much on their plate, and the hours they logged this week.
 function Workload() {
   const { members, tasks } = useData();
@@ -95,19 +86,57 @@ function Workload() {
   );
 }
 
+// Shows a freshly made invite link once, with quick ways to send it.
+function LinkModal({ link, onClose }: { link: { url: string; name: string; reset: boolean }; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const message = link.reset
+    ? `Hi ${link.name}, here is your link to set a new password for Sneh Workspace: ${link.url}`
+    : `Hi ${link.name}, you're invited to Sneh Workspace. Open this link to choose your user ID and password: ${link.url}`;
+  return (
+    <Modal title={link.reset ? `Password link for ${link.name}` : `Invite link for ${link.name}`} onClose={onClose} wide>
+      <p className="text-sm text-slate-600">Send this link to {link.name} privately. It works once, and you can only copy it now, so send it right away.</p>
+      <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+        <Link2 size={15} className="shrink-0 text-slate-400" />
+        <input readOnly value={link.url} className="min-w-0 flex-1 bg-transparent font-mono text-xs outline-none" onFocus={(e) => e.target.select()} />
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          onClick={() => {
+            void navigator.clipboard.writeText(link.url);
+            setCopied(true);
+          }}
+          className="btn-primary"
+        >
+          {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? "Copied" : "Copy link"}
+        </button>
+        <a href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer" className="btn-secondary">
+          <MessageCircle size={15} /> WhatsApp
+        </a>
+        <a href={`mailto:?subject=${encodeURIComponent("Your Sneh Workspace invite")}&body=${encodeURIComponent(message)}`} className="btn-secondary">
+          <Mail size={15} /> Email
+        </a>
+      </div>
+    </Modal>
+  );
+}
+
 export function Team() {
   const { members, people, role, me, tasks, savePeople } = useData();
   const [name, setName] = useState("");
-  const [id, setId] = useState("");
-  const [password, setPassword] = useState("");
   const [newRole, setNewRole] = useState<Role>("member");
-  const [reset, setReset] = useState<{ id: string; name: string } | null>(null);
-  const [resetPw, setResetPw] = useState("");
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [link, setLink] = useState<{ url: string; name: string; reset: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const isAdmin = atLeast(role, "admin");
   const hasLogin = new Set(people.map((p) => p.id));
+  const nameOf = (l: string) => members.find((m) => m.login === l)?.name || l;
+
+  const loadInvites = useCallback(() => {
+    if (isAdmin) readJson<Invite[]>("invites.json", []).then(setInvites, () => setInvites([]));
+  }, [isAdmin]);
+  useEffect(loadInvites, [loadInvites]);
 
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     setBusy(true);
@@ -125,7 +154,25 @@ export function Team() {
     }
   };
 
+  // Locks the admin's key with a fresh secret code and records the pending invite.
+  const makeInvite = async (who: string, r: Role, resetFor?: string) => {
+    const code = newInviteCode();
+    const key = await saveInviteLock(code, getToken());
+    const invite: Invite = { id: uid(), key, name: who, role: r, by: me.login, at: new Date().toISOString(), ...(resetFor ? { resetFor } : {}) };
+    const list = await updateJson<Invite[]>("invites.json", [], (l) => [...l.filter((i) => !(resetFor && i.resetFor === resetFor)), invite], resetFor ? `Password link for ${resetFor}` : `Invite ${who}`);
+    setInvites(list);
+    const base = window.location.href.split("#")[0];
+    setLink({ url: `${base}#/join/${invite.id}.${code}`, name: who.split(" ")[0], reset: !!resetFor });
+  };
+
+  const cancelInvite = (i: Invite) =>
+    run(async () => {
+      await removeKey(i.key);
+      setInvites(await updateJson<Invite[]>("invites.json", [], (l) => l.filter((x) => x.id !== i.id), `Cancel invite for ${i.name}`));
+    }, "Invite cancelled. Its link no longer works.");
+
   const setRole = (pid: string, r: Role) => run(() => savePeople((list) => list.map((p) => (p.id === pid ? { ...p, role: r } : p)), "Change a role"), "Role updated.");
+  const pending = invites.filter((i) => !i.resetFor);
 
   return (
     <>
@@ -138,38 +185,55 @@ export function Team() {
             className="card flex flex-col gap-3 p-5"
             onSubmit={(e) => {
               e.preventDefault();
-              const uid = normalizeId(id);
-              const display = name.trim() || uid;
+              const who = name.trim();
               void run(async () => {
-                if (!ID_RE.test(uid)) throw new Error("User IDs are 3 to 32 letters or numbers, and may use . _ or -");
-                if (people.some((p) => p.id === uid)) throw new Error(`The user ID "${uid}" is already taken.`);
-                if (password.length < MIN_PASSWORD) throw new Error(`Passwords need at least ${MIN_PASSWORD} characters.`);
-                await saveLogin(uid, password, getToken());
-                await savePeople((list) => [...list.filter((p) => p.id !== uid), { id: uid, name: display, role: newRole }], `Add ${display}`);
+                await makeInvite(who, newRole);
                 setName("");
-                setId("");
-                setPassword("");
-              }, `${display} can now sign in with user ID "${uid}" and the password you chose. Send both to them privately.`);
+              });
             }}
           >
-            <h2 className="font-bold">Add a person</h2>
-            <p className="text-sm text-slate-500">Choose a user ID and password for them. They sign in at this same web address with just those two.</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <input value={name} onChange={(e) => setName(e.target.value)} required className="input" placeholder="Full name" />
-              <input value={id} onChange={(e) => setId(e.target.value.toLowerCase().replace(/\s/g, ""))} required className="input" placeholder="User ID, e.g. priya" autoCapitalize="none" autoComplete="off" />
-              <PasswordInput value={password} onChange={setPassword} />
-              <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)} className="input">
+            <div className="flex items-center gap-2">
+              <UserPlus size={18} className="text-brand-500" />
+              <h2 className="font-bold">Invite a person</h2>
+            </div>
+            <p className="text-sm text-slate-500">Pick their name and role. You get a link to send them, and they choose their own user ID and password.</p>
+            <div className="flex flex-wrap gap-2">
+              <input name="invite-name" value={name} onChange={(e) => setName(e.target.value)} required className="input min-w-48 flex-1" placeholder="Full name" />
+              <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)} className="input w-auto">
                 {ROLES.map((r) => (
                   <option key={r} value={r}>
                     {r[0].toUpperCase() + r.slice(1)}: {ROLE_HELP[r]}
                   </option>
                 ))}
               </select>
+              <button disabled={busy || !name.trim()} className="btn-primary">
+                {busy ? "Creating…" : "Create invite link"}
+              </button>
             </div>
-            <button disabled={busy} className="btn-primary self-start">
-              {busy ? "Saving…" : "Create login"}
-            </button>
           </form>
+        )}
+        {isAdmin && pending.length > 0 && (
+          <section className="card overflow-hidden">
+            <h2 className="border-b border-slate-100 px-5 py-3 font-bold">Waiting to join</h2>
+            <div className="divide-y divide-slate-100">
+              {pending.map((i) => (
+                <div key={i.id} className="flex flex-wrap items-center gap-3 px-5 py-2.5 text-sm">
+                  <Avatar login={i.id} name={i.name} size={28} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{i.name}</p>
+                    <p className="text-xs text-slate-500">
+                      Invited by {nameOf(i.by)} {formatDistanceToNow(new Date(i.at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  <span className="tag bg-slate-100 capitalize text-slate-600">{i.role}</span>
+                  <button disabled={busy} onClick={() => cancelInvite(i)} className="text-xs font-semibold text-red-600">
+                    Cancel
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="border-t border-slate-100 px-5 py-2 text-xs text-slate-500">Lost a link? Cancel the invite and create a new one.</p>
+          </section>
         )}
         <Workload />
         <section className="card divide-y divide-slate-100">
@@ -191,7 +255,7 @@ export function Team() {
                       <option key={r}>{r}</option>
                     ))}
                   </select>
-                  <button disabled={busy} onClick={() => setReset({ id: m.login, name: m.name || m.login })} className="text-xs font-semibold text-brand-600">
+                  <button disabled={busy} onClick={() => run(() => makeInvite(m.name || m.login, m.role, m.login))} className="text-xs font-semibold text-brand-600">
                     Reset password
                   </button>
                   <button
@@ -214,31 +278,9 @@ export function Team() {
             </div>
           ))}
         </section>
-        <p className="text-xs text-slate-500">
-          Logins work through the GitHub key of the admin who created them. If that key is ever deleted or expires, create the logins again from here.
-        </p>
+        <p className="text-xs text-slate-500">Logins and invites work through the GitHub key of the admin who made them. If that key is ever deleted or expires, invite people again from here.</p>
       </main>
-      {reset && (
-        <Modal title={`New password for ${reset.name}`} onClose={() => setReset(null)}>
-          <form
-            className="flex flex-col gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void run(() => saveLogin(reset.id, resetPw, getToken()), `${reset.name}'s password was changed. Send the new one to them privately.`).then((ok) => {
-                if (ok) {
-                  setReset(null);
-                  setResetPw("");
-                }
-              });
-            }}
-          >
-            <PasswordInput value={resetPw} onChange={setResetPw} />
-            <button disabled={busy} className="btn-primary self-start">
-              {busy ? "Saving…" : "Save password"}
-            </button>
-          </form>
-        </Modal>
-      )}
+      {link && <LinkModal link={link} onClose={() => setLink(null)} />}
     </>
   );
 }

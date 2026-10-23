@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { WorkspaceProvider, useWs } from "@/lib/store";
 import { Layout } from "@/components/layout";
 import { Spinner } from "@/components/ui";
@@ -24,9 +24,17 @@ import { Search } from "@/pages/search";
 import { Settings } from "@/pages/settings";
 import { InboxPage } from "@/pages/inbox";
 import { Timeline } from "@/pages/timeline";
+import { Join } from "@/pages/join";
 
 function Gate() {
   const ws = useWs();
+  const location = useLocation();
+  if (location.pathname.startsWith("/join/"))
+    return (
+      <Routes>
+        <Route path="join/:link" element={<Join />} />
+      </Routes>
+    );
   if (ws.loading && !ws.state) return <Spinner label="Opening your workspace…" />;
   if (!ws.state) return <Login />;
   return (

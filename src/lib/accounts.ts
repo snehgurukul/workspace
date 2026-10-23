@@ -59,8 +59,16 @@ async function readCopies(): Promise<Accounts[]> {
   return [a, b].filter((x): x is Accounts => !!x);
 }
 
+async function hashOf(text: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return b64(digest).replace(/[+/=]/g, "").slice(0, 32);
+}
+
 export async function unlock(id: string, password: string): Promise<string> {
-  const key = await idHash(id);
+  return unlockKey(await idHash(id), password);
+}
+
+async function unlockKey(key: string, password: string): Promise<string> {
   const records = (await readCopies()).map((c) => c[key]).filter((r): r is Lock => !!r);
   for (const record of records) {
     try {
@@ -93,6 +101,33 @@ async function change(fn: (a: Accounts) => Accounts, message: string) {
       if (attempt < 3 && e instanceof GitHubError && (e.status === 409 || e.status === 422)) continue;
       throw e;
     }
+  }
+}
+
+// Invites: the admin's key locked with a random code that only travels inside the invite link.
+export const newInviteCode = () => b64(crypto.getRandomValues(new Uint8Array(18))).replace(/\+/g, "-").replace(/\//g, "_");
+export const inviteKey = (code: string) => hashOf(`sneh-invite:${code}`);
+
+export async function saveInviteLock(code: string, token: string) {
+  const record = await lock(token, code);
+  const key = await inviteKey(code);
+  await change((a) => ({ ...a, [key]: record }), "Add a workspace invite");
+  return key;
+}
+
+export async function removeKey(key: string) {
+  await change((a) => {
+    const { [key]: _, ...rest } = a;
+    void _;
+    return rest;
+  }, "Remove a workspace invite");
+}
+
+export async function unlockInvite(code: string) {
+  try {
+    return await unlockKey(await inviteKey(code), code);
+  } catch {
+    throw new Error("This invite link doesn't work. It may have been used already or cancelled. Ask your admin for a new one.");
   }
 }
 

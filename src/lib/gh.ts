@@ -11,7 +11,14 @@ export const REPO = import.meta.env.VITE_REPO_NAME ?? "webapp";
 export const DATA_BRANCH = "workspace-data";
 const R = `/repos/${OWNER}/${REPO}`;
 
+// A key used only for the current page, without signing in (the invite page uses it).
+let pageToken = "";
+export const setPageToken = (t: string) => {
+  pageToken = t;
+};
+
 export const getToken = () => {
+  if (pageToken) return pageToken;
   try {
     return localStorage.getItem(TOKEN_KEY) ?? memoryToken;
   } catch {

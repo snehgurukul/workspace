@@ -73,6 +73,18 @@ export interface TimeEntry {
   note?: string;
 }
 
+// A pending invite, kept in invites.json on the data branch. The link's secret code is never stored.
+export interface Invite {
+  id: string;
+  key: string;
+  name: string;
+  role: Role;
+  by: string;
+  at: string;
+  // Set when the link only sets a new password for an existing user ID.
+  resetFor?: string;
+}
+
 // A notice for the whole team, kept in announcements.json on the data branch.
 export interface Announcement {
   id: string;
