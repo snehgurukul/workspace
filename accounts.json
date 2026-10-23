@@ -4,11 +4,5 @@
   "iv": "hYiTGZse2umDiO9N",
   "data": "03gn6Zm4KzhK+iCfjX/Zwq41jtDPQRiSzvMdLT/xjw9mEyefwa+1Xx8lnGmxLAbB0QiMrOR9ISE=",
   "iterations": 600000
- },
- "V2gcaq324SSUtKDPTeeCUqhqKvqVw34B": {
-  "salt": "zs2II4UWo9aWM9I2d6kbQg==",
-  "iv": "C1xMyGa6PABq6NX2",
-  "data": "QxqSmd0145psU9jSp0LRVMkEUJ/R/3YIq2PzEPUM+fFXO1ODYJ9+NIt98ncqlfrLHPNSIs4nYzI=",
-  "iterations": 600000
  }
 }
