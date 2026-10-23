@@ -5,11 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="./favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <title>Sneh Workspace</title>
+    <script>
+      // Show a message instead of a blank page if the app fails to start.
+      // A missing app file usually means an old copy of this page was cached during an update, so reload a fresh one once.
+      addEventListener(
+        "error",
+        function (e) {
+          var t = e.target;
+          if (t && t.tagName === "SCRIPT") {
+            if (!sessionStorage.getItem("sneh.reloaded")) {
+              sessionStorage.setItem("sneh.reloaded", "1");
+              location.replace(location.pathname + "?v=" + Date.now() + location.hash);
+              return;
+            }
+          }
+          var root = document.getElementById("root");
+          if (root && !root.dataset.started) root.innerHTML = '<p style="font:15px system-ui;padding:24px;max-width:520px;margin:auto">Sneh Workspace could not start. Please refresh the page. If it keeps happening, send this to your admin: <code>' + String((e && e.message) || (t && (t.src || t.href)) || "unknown").replace(/</g, "&lt;") + "</code></p>";
+        },
+        true,
+      );
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><p style="font: 15px system-ui; padding: 24px; text-align: center; color: #64748b">Loading Sneh Workspace…</p></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
